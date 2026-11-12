@@ -1,0 +1,35 @@
+{
+  "id": "./",
+  "name": "Snusfri",
+  "short_name": "Snusfri",
+  "description": "En roligere måde at holde op med snus. Følg tiden, pengene og helbredet — og få hjælp, når trangen kommer.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A110E",
+  "theme_color": "#0A110E",
+  "lang": "da",
+  "dir": "ltr",
+  "categories": ["health", "lifestyle", "medical"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

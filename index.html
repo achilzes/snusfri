@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>
+  /* Pin the shell to the physical screen in iOS standalone.
+     100svh/100dvh/innerHeight can resolve to the Safari-browser height
+     (~the 17% gap). Update on every viewport change; never set-and-forget. */
+  (function () {
+    var root = document.documentElement;
+    function isStandalone() {
+      return navigator.standalone === true ||
+        (window.matchMedia && (
+          matchMedia("(display-mode: standalone)").matches ||
+          matchMedia("(display-mode: fullscreen)").matches
+        ));
+    }
+    function screenCssH() {
+      var sw = screen.width || 0, sh = screen.height || 0;
+      var landscape = window.matchMedia && matchMedia("(orientation: landscape)").matches;
+      return landscape ? Math.min(sw, sh) : Math.max(sw, sh);
+    }
+    function reportedH() {
+      var h = window.innerHeight || 0;
+      if (window.visualViewport && visualViewport.height) {
+        h = Math.max(h, Math.round(visualViewport.height));
+      }
+      return h;
+    }
+    function apply() {
+      if (!isStandalone()) {
+        root.style.removeProperty("--app-h");
+        root.style.removeProperty("--fixed-bottom");
+        return;
+      }
+      var reported = reportedH();
+      var screenH = screenCssH();
+      var h = reported;
+      var gap = screenH - reported;
+      /* Safari-chrome-sized undershoot (not a keyboard, which is ~300px+). */
+      if (screenH && gap > 40 && gap < 220) h = screenH;
+      if (h) root.style.setProperty("--app-h", h + "px");
+      /* Tab bar is position:fixed; bottom:0 against the real viewport,
+         so --fixed-bottom stays 0. Kept as a hook if a future WebKit
+         build pins "fixed" to the short ICB. */
+      root.style.setProperty("--fixed-bottom", "0px");
+    }
+    apply();
+    addEventListener("resize", apply, { passive: true });
+    addEventListener("orientationchange", function () {
+      apply();
+      setTimeout(apply, 50);
+      setTimeout(apply, 300);
+      setTimeout(apply, 600);
+    });
+    if (window.visualViewport) {
+      visualViewport.addEventListener("resize", apply, { passive: true });
+      visualViewport.addEventListener("scroll", apply, { passive: true });
+    }
+    if (window.matchMedia) {
+      try { matchMedia("(display-mode: standalone)").addEventListener("change", apply); } catch (e) {}
+    }
+  })();
+  </script>
+  <meta name="theme-color" content="#0A110E">
+  <meta name="color-scheme" content="dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Snusfri">
+  <meta name="application-name" content="Snusfri">
+  <meta name="description" content="En roligere måde at holde op med snus. Følg tiden, pengene og helbredet — og få hjælp, når trangen kommer.">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+  <link rel="icon" href="favicon.ico">
+  <link rel="stylesheet" href="fonts/fonts.css">
+  <link rel="stylesheet" href="styles.css">
+  <title>Snusfri</title>
+</head>
+<body>
+  <div id="app">
+    <div id="onboarding" class="onboarding hidden" aria-live="polite"></div>
+
+    <main id="main" class="hidden">
+      <section id="view-home" class="view active"></section>
+      <section id="view-health" class="view"></section>
+      <section id="view-craving" class="view"></section>
+      <section id="view-goals" class="view"></section>
+      <section id="view-more" class="view"></section>
+    </main>
+
+    <nav id="tabbar" class="tabbar hidden" aria-label="Hovedmenu">
+      <button class="tab active" data-act="tab" data-tab="home" aria-label="Hjem">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5"/><path d="M6.5 10.5V20h11V10.5"/></svg>
+        Hjem
+      </button>
+      <button class="tab" data-act="tab" data-tab="health" aria-label="Sundhed">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-4.4-9.2-9.2C1.4 8.4 3.2 5 6.6 5c2 0 3.3 1.2 5.4 3.4C14.1 6.2 15.4 5 17.4 5c3.4 0 5.2 3.4 3.8 6.8C19 16.6 12 21 12 21z"/></svg>
+        Sundhed
+      </button>
+      <button class="tab" data-act="tab" data-tab="craving" aria-label="Trang">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c2 3.5-1.5 5.2-1.5 8.2 0 1.7 1.2 3 2.8 3.2 2.3.2 4.2-1.6 4.2-3.8 2.4 2 3 5 1.3 7.4C17 20.3 14.6 21.5 12 21.5c-4.1 0-7.5-3.2-7.5-7.8C4.5 8.8 8.4 5.6 12 3z"/></svg>
+        Trang
+      </button>
+      <button class="tab" data-act="tab" data-tab="goals" aria-label="Mål">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>
+        Mål
+      </button>
+      <button class="tab" data-act="tab" data-tab="more" aria-label="Mere">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>
+        Mere
+      </button>
+    </nav>
+
+    <button id="fab-sos" class="fab-sos hidden" data-act="sos" aria-label="Jeg har en trang">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c2 3.5-1.5 5.2-1.5 8.2 0 1.7 1.2 3 2.8 3.2 2.3.2 4.2-1.6 4.2-3.8 2.4 2 3 5 1.3 7.4C17 20.3 14.6 21.5 12 21.5c-4.1 0-7.5-3.2-7.5-7.8C4.5 8.8 8.4 5.6 12 3z"/></svg>
+    </button>
+
+    <div id="breath-screen" class="breath-screen hidden" role="dialog" aria-modal="true" aria-label="Vejrtrækning"></div>
+    <div id="wave-screen" class="wave-screen hidden" role="dialog" aria-modal="true" aria-label="Trang-surfer"></div>
+    <div id="party-screen" class="party-screen hidden" role="dialog" aria-modal="true" aria-label="Fest-mode"></div>
+    <div id="modal-root" class="modal-root"></div>
+    <div id="toast-root" aria-live="polite"></div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
