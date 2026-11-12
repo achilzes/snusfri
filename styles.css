@@ -2926,3 +2926,148 @@ html[data-theme="light"] .slip-actions {
 }
 .streak-line { margin: 0.15rem 0 0.7rem; }
 
+
+/* ======================== v12 ======================== */
+
+.calm-intake {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 26rem;
+  margin: 0 auto;
+  padding: 0.2rem 0 1rem;
+  flex: 1;
+}
+.calm-ints {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.4rem;
+  margin: 0.35rem 0 0.9rem;
+}
+.calm-int {
+  appearance: none;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-card);
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 1.25rem;
+  font-weight: 560;
+  border-radius: 14px;
+  min-height: 3.05rem;
+  padding: 0.35rem 0;
+}
+.calm-int.mid { border-color: rgba(232, 196, 122, 0.35); }
+.calm-int.hi { border-color: rgba(224, 122, 95, 0.45); }
+.calm-int.on {
+  background: var(--gold);
+  color: #0A110E;
+  border-color: var(--gold);
+}
+.calm-int.hi.on { background: var(--coral); border-color: var(--coral); color: #1A0C08; }
+.calm-feel-title {
+  font-family: var(--display);
+  font-size: 1.15rem;
+  font-weight: 560;
+  margin: 0.2rem 0 0.45rem;
+}
+.feel-chips { margin-bottom: 0.8rem; }
+.feel-chip { min-height: 2.5rem; }
+.calm-after-lab { margin: 0.15rem 0 0.2rem; color: var(--text-dim); font-size: 0.92rem; }
+.calm-out-wrap .calm-ints { margin-bottom: 0.7rem; }
+.helped-row { margin: 0.55rem 0 0.2rem; }
+.helped-row .chips { justify-content: flex-start; }
+.follow-offer { margin-top: 0.85rem; }
+.follow-banner { border-color: rgba(126, 226, 168, 0.22); }
+
+/* check-in compact */
+.ci-row { margin: 0.45rem 0; }
+.ci-row > label { margin-bottom: 0.28rem; }
+.ci-chips { gap: 0.32rem; }
+.ci-chips .chip { min-height: 2.15rem; padding: 0.28rem 0.62rem; font-size: 0.86rem; }
+.ci-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  margin: 0.5rem -0.4rem 0;
+  padding: 0.7rem 0.4rem 0.15rem;
+  background: var(--bg-elev);
+  box-shadow: 0 -12px 16px var(--bg-elev);
+}
+
+/* assistant */
+.assist-list { display: flex; flex-direction: column; gap: 0.45rem; }
+.assist-item {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.assist-q {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 560;
+  padding: 0.9rem 1rem;
+  min-height: 3.1rem;
+}
+.assist-q .chev { color: var(--gold); font-size: 1.2rem; line-height: 1; }
+.assist-a { padding: 0 1rem 1rem; }
+.assist-a p { color: var(--text-dim); font-size: 0.95rem; }
+
+/* stats */
+.stats-ranges { margin: 0 0 0.85rem; }
+.chart-sub { color: var(--text-dim); font-size: 0.88rem; margin: 0.15rem 0 0.55rem; }
+.chart-empty { min-height: 5.5rem; display: flex; align-items: center; justify-content: center; }
+.chart-empty p { color: var(--text-mute); font-size: 0.9rem; text-align: center; margin: 0; }
+svg.chart.spark { width: 100%; height: auto; display: block; }
+
+/* XP */
+.xp-card {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem 0.95rem;
+  margin: 0 0 1rem;
+}
+.xp-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.45rem; }
+.xp-lvl { font-family: var(--display); font-weight: 560; font-size: 1.05rem; color: var(--gold); }
+.xp-num { color: var(--text-mute); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.xp-track {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+.xp-track i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-soft));
+}
+.xp-hint { margin: 0.5rem 0 0; color: var(--text-mute); font-size: 0.8rem; }
+
+/* dependence */
+.dep-summary p { margin: 0 0 0.65rem; color: var(--text-dim); }
+.dep-summary p strong { color: var(--text); font-weight: 560; }
+
+@media (max-height: 700px) {
+  .calm-int { min-height: 2.55rem; font-size: 1.1rem; }
+  .calm-intake .wave-sub { margin-bottom: 0.3rem; }
+  .ci-chips .chip { min-height: 1.95rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .xp-track i { transition: none; }
+}
+
+.calm-out-wrap { width: 100%; max-width: 24rem; margin: 0 auto; }
+.calm-out-wrap .calm-int { min-height: 2.85rem; }
+.wave-screen .calm-int { box-shadow: none; }

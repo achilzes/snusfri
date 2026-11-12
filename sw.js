@@ -1,5 +1,5 @@
 /* Snusfri service worker — offline-first, shell is network-first */
-const VERSION = 'snusfri-v11';
+const VERSION = 'snusfri-v12';
 const ASSETS = [
   './',
   './index.html',

@@ -438,12 +438,13 @@
       motivation: "",
       quitMode: "cold",
       leftovers: "",
-      alcoholFirstWeeks: ""
+      alcoholFirstWeeks: "",
+      dep: defaultDep()
     };
   }
   function defaultState() {
     return {
-      v: 5,
+      v: 6,
       onboarded: false,
       profile: defaultProfile(),
       taper: {
@@ -491,7 +492,12 @@
       recapSeen: {},
       activeDelay: null,
       lastBackupAt: null,
-      backupRemindedAt: null
+      backupRemindedAt: null,
+      xp: 0,
+      xpAwarded: {},
+      xpBackfilled: false,
+      xpLevelSeen: 1,
+      followup: null
     };
   }
 
@@ -511,6 +517,7 @@
     const incoming = data && typeof data === "object" ? data : {};
     const next = Object.assign(base, incoming);
     next.profile = Object.assign(defaultProfile(), incoming.profile || {});
+    next.profile.dep = Object.assign(defaultDep(), (incoming.profile && incoming.profile.dep) || next.profile.dep || {});
     next.taper = Object.assign(base.taper, incoming.taper || {});
     next.goals = incoming.goals || [];
     next.cravings = incoming.cravings || [];
@@ -589,7 +596,14 @@
     if (!s.profile.alcoholFirstWeeks) s.profile.alcoholFirstWeeks = s.profile.alcoholFirstWeeks || "";
     if (!s.lastBackupAt) s.lastBackupAt = null;
     if (!s.backupRemindedAt) s.backupRemindedAt = null;
-    s.v = Math.max(Number(s.v) || 1, 5);
+    if (!s.profile) s.profile = defaultProfile();
+    s.profile.dep = Object.assign(defaultDep(), (s.profile.dep) || {});
+    if (s.xp == null || s.xp === "") s.xp = 0;
+    if (!s.xpAwarded || typeof s.xpAwarded !== "object") s.xpAwarded = {};
+    if (s.xpLevelSeen == null) s.xpLevelSeen = 1;
+    if (s.followup === undefined) s.followup = null;
+    backfillXp(s);
+    s.v = Math.max(Number(s.v) || 1, 6);
     return s;
   }
 
@@ -1221,6 +1235,7 @@
     setTxt("live-s", pad(t.secs));
     const unit = document.getElementById("live-unit");
     if (unit) unit.textContent = plural(t.days, "dag", "dage");
+    try { tickFollowup(); } catch (e) {}
     const parts = moneyParts(s.money);
     const intEl = document.getElementById("money-int");
     const decEl = document.getElementById("money-dec");
@@ -1278,7 +1293,8 @@
       alcoholFirstWeeks: p.alcoholFirstWeeks || "little",
       buddyName: (state.buddy && state.buddy.name) || "",
       buddyPhone: (state.buddy && state.buddy.phone) || "",
-      letter: (state.letter && state.letter.text) || ""
+      letter: (state.letter && state.letter.text) || "",
+      dep: Object.assign(defaultDep(), (p.dep) || {})
     };
     (state.ifThenPlans || []).forEach(function (pl) {
       obDraft.planDrafts[pl.trigger] = { ifText: pl.ifText, thenText: pl.thenText };
@@ -1338,6 +1354,13 @@
         };
       }
     });
+    if (d.dep) {
+      const ye = document.getElementById("dep-years");
+      if (ye && ye.value !== "") {
+        const n = parseNum(ye.value);
+        if (!isNaN(n)) d.dep.yearsUse = n;
+      }
+    }
     return d;
   }
 
@@ -1358,7 +1381,7 @@
     wrap.classList.remove("hidden");
     const d = ensureDraft();
     const step = obStep;
-    const dots = [0, 1, 2, 3, 4, 5]
+    const dots = [0, 1, 2, 3, 4, 5, 6]
       .map(function (i) { return "<i class=\"" + (i <= step ? "on" : "") + "\"></i>"; })
       .join("");
     let body = "";
@@ -1540,6 +1563,19 @@
         "</button>" +
         '<button class="ob-skip" data-act="ob-back">Tilbage</button>' +
         "</div>";
+    } else if (step === 5) {
+      const dep = Object.assign(defaultDep(), d.dep || {});
+      d.dep = dep;
+      body =
+        '<h1 class="ob-title">Din afhængighed</h1>' +
+        depFormHtml(dep, {
+          lead: "Et par spørgsmål, så rådene kan ramme dine situationer. Ikke en diagnose — du kan springe over eller ændre det senere.",
+          leadClass: "ob-lead"
+        }) +
+        '<div class="ob-actions">' +
+        '<button class="btn btn-primary btn-block" data-act="ob-next">Fortsæt</button>' +
+        '<button class="ob-skip" data-act="ob-back">Tilbage</button>' +
+        "</div>";
     } else {
       const r = rates(d);
       body =
@@ -1637,7 +1673,8 @@
       motivation: reasons[0],
       quitMode: d.quitMode || "cold",
       leftovers: d.leftovers || "",
-      alcoholFirstWeeks: d.alcoholFirstWeeks || ""
+      alcoholFirstWeeks: d.alcoholFirstWeeks || "",
+      dep: Object.assign(defaultDep(), d.dep || {}, (d.dep && (d.dep.firstUse || (d.dep.situations && d.dep.situations.length) || d.dep.attempts || d.dep.yearsUse != null)) ? { filledAt: new Date().toISOString(), skipped: false } : {})
     });
     state.reasons = reasons.map(function (t) { return { id: uid(), text: t }; });
     const plans = [];
@@ -2694,7 +2731,7 @@
       }
     }
 
-    return out;
+    return out.concat(lifestyleInsights());
   }
 
   function insightsTeaserHtml() {
@@ -2746,8 +2783,10 @@
         (s.future ? "" : journeyTrees(s.days, { wide: true })) +
         '<div class="insight-list">' +
         items +
+        lifestylePendingHtml() +
         "</div>" +
-        '<button type="button" class="btn btn-ghost-mint btn-block mt-2" data-act="goto-recap">Ugens overblik</button>'
+        '<button type="button" class="btn btn-ghost-mint btn-block mt-2" data-act="goto-stats">Statistik</button>' +
+        '<button type="button" class="btn btn-ghost-mint btn-block mt" data-act="goto-recap">Ugens overblik</button>'
     );
   }
 
@@ -3051,6 +3090,7 @@
       if (next) {
         if (step >= GROUND_STEPS.length - 1) {
           closeToolScreen();
+          if (afterIntervention("ground")) return;
           askHelped("ground");
           return;
         }
@@ -3072,6 +3112,7 @@
       if (timeEl) timeEl.textContent = String(sec);
       if (rem <= 0) {
         closeToolScreen();
+        if (afterIntervention(opts.id)) return;
         askHelped(opts.id);
         return;
       }
@@ -3368,72 +3409,87 @@
   }
 
   function showCalmOutcome(sos, kind) {
+    sos = sos || sessionToSos(calmSession) || {};
+    try { closeToolScreen(); } catch (e) {}
+    const breath = document.getElementById("breath-screen");
+    if (breath) { breath.classList.add("hidden"); breath.innerHTML = ""; }
+    if (typeof breathRaf !== "undefined" && breathRaf) { try { cancelAnimationFrame(breathRaf); } catch (e) {} breathRaf = 0; }
+    breathStop = null;
     const screen = $("#wave-screen");
-    if (!screen) {
-      closeWave();
-      return;
-    }
+    if (!screen) return;
     stopBreathCoach();
-    if (waveRaf) cancelAnimationFrame(waveRaf);
-    waveRaf = 0;
-    haptic("done");
-    screen.classList.add("h-flash");
-    const counted = kind === "done" || kind === "okay";
-    const waves = (Number(state.wavesRidden) || 0) + (counted ? 1 : 0);
-    screen._sos = Object.assign({}, sos || {}, { usedWave: counted, skipped: kind === "skip" });
+    if (waveRaf) {
+      cancelAnimationFrame(waveRaf);
+      waveRaf = 0;
+    }
+    const waves = Number(state.wavesRidden) || 0;
+    screen._sos = Object.assign({}, sos);
+    screen.classList.remove("hidden");
+    const tab = $("#tabbar");
+    const fab = $("#fab-sos");
+    if (tab) tab.classList.add("hidden");
+    if (fab) fab.classList.add("hidden");
+    const after = sos.intensityAfter || 0;
+    const toolId = sos.toolId || (calmSession && calmSession.toolId) || "wave";
+    const tool = TOOLS.filter(function (t) { return t.id === toolId; })[0];
+    const toolLab = tool ? tool.label : "øvelsen";
     screen.innerHTML =
-      '<div class="calm-out">' +
-      '<p class="wave-kicker">' +
-      (kind === "skip" ? "Fair nok" : "Sådan") +
-      "</p>" +
-      "<h2>Hvordan gik det?</h2>" +
+      '<div class="calm-out calm-out-wrap">' +
+      '<p class="wave-kicker">Og nu</p>' +
+      '<h2 class="wave-title">Hvor stærk er den nu?</h2>' +
       '<p class="lead">' +
       (kind === "skip"
-        ? "Du behøver ikke gøre bølgen færdig. Vælg det, der passer — uden karakter."
+        ? "Du behøver ikke gøre øvelsen færdig. Et ærligt tal og et ærligt svar er nok."
         : "Du red den" +
           (waves ? " — " + waves + " " + plural(waves, "bølge", "bølger") + " i alt" : "") +
           ". Et ærligt svar er nok.") +
       "</p>" +
+      intensityPickerHtml("calm-after", after, "calm-after") +
       '<button type="button" class="btn btn-primary btn-block" data-act="calm-ok">Klarede den</button>' +
       '<button type="button" class="btn btn-ghost-mint btn-block" data-act="calm-nf">Tog en nikotinfri pose</button>' +
       '<button type="button" class="btn btn-ghost btn-block" data-act="calm-fell" style="color:#E8A090">Faldt</button>' +
       '<button type="button" class="btn btn-ghost btn-block" data-act="calm-close">Bare luk</button>' +
+      '<div class="helped-row"><p class="field"><label>Hjalp ' +
+      esc(toolLab) +
+      '?</label></p><div class="chips">' +
+      '<button type="button" class="chip" data-act="calm-helped" data-id="' +
+      esc(toolId) +
+      '" data-val="yes">Ja</button>' +
+      '<button type="button" class="chip" data-act="calm-helped" data-id="' +
+      esc(toolId) +
+      '" data-val="mid">Lidt</button>' +
+      '<button type="button" class="chip" data-act="calm-helped" data-id="' +
+      esc(toolId) +
+      '" data-val="no">Ikke denne gang</button></div></div>' +
       '<p class="hint mt">Ingen skam. Bare det, der skete.</p></div>';
   }
 
   function finishCalm(kind) {
     const screen = $("#wave-screen");
-    const sos = (screen && screen._sos) || {};
-    const counted = !!sos.usedWave;
+    const sos = (screen && screen._sos) || sessionToSos(calmSession) || {};
+    const toolId = sos.toolId || (calmSession && calmSession.toolId) || "";
+    const isWave = !!sos.usedWave || toolId === "wave" || !toolId;
     if (kind === "ok" || kind === "nf") {
-      logCraving({
+      const c = logCraving({
         intensity: sos.intensity || 0,
+        intensityAfter: sos.intensityAfter != null ? sos.intensityAfter : null,
+        feeling: sos.feeling || (calmSession && calmSession.feeling) || "",
         trigger: sos.trigger || "",
         note: sos.note || (kind === "nf" ? "Nikotinfri pose" : ""),
         resisted: true,
         usedBreathing: true,
-        usedWave: counted,
-        usedNf: kind === "nf"
+        usedWave: isWave,
+        usedNf: kind === "nf",
+        toolUsed: toolId || (isWave ? "wave" : "")
       });
       if (kind === "nf") logNfOnce();
-      if (counted) state.wavesRidden = (Number(state.wavesRidden) || 0) + (/* logCraving may already increment */ 0);
-      /* logCraving increments wavesRidden if usedWave && resisted — don't double. */
       save();
-      closeWave();
-      if (state.onboarded) {
-        const tab = $("#tabbar");
-        if (tab) tab.classList.remove("hidden");
-      }
-      toast(
-        kind === "nf"
-          ? "Logget. Nikotinfri poser kan holde vanen i hænderne — midlertidigt, ikke det samme som at være fri."
-          : "Logget. Den gik."
-      );
-      if (view === "home" || view === "craving") render();
+      showFollowupOffer(c, kind);
       return;
     }
     if (kind === "fell") {
       closeWave();
+      calmSession = null;
       if (state.onboarded) {
         const tab = $("#tabbar");
         if (tab) tab.classList.remove("hidden");
@@ -3442,6 +3498,1431 @@
       openSlip({});
       if (root) root._sos = sos;
     }
+  }
+
+  function showFollowupOffer(craving, kind) {
+    const screen = $("#wave-screen");
+    if (!screen) {
+      closeWave();
+      return;
+    }
+    screen._cravingId = craving && craving.id;
+    screen._finishKind = kind;
+    screen.classList.remove("hidden");
+    screen.innerHTML =
+      '<div class="calm-out follow-offer">' +
+      '<p class="wave-kicker">Et øjeblik endnu</p>' +
+      '<h2 class="wave-title">Hvordan går det om fem minutter?</h2>' +
+      '<p class="lead">' +
+      (kind === "nf"
+        ? "Logget. Nikotinfri poser kan holde vanen i hænderne — midlertidigt, ikke det samme som at være fri. "
+        : "Logget. Den gik. ") +
+      "Jeg kan spørge igen om fem minutter, mens appen er åben. Når den er lukket, virker beskeder ikke på iPhone.</p>" +
+      '<button type="button" class="btn btn-primary btn-block" data-act="follow-yes">Ja tak — spørg om 5 min.</button>' +
+      '<button type="button" class="btn btn-ghost btn-block mt" data-act="follow-no">Nej tak</button></div>';
+  }
+
+  /* ---------------- v12: SOS intake, check-in, assistant, stats, dep, XP ---------------- */
+
+  const FEELINGS = [
+    { id: "restless", label: "Rastløs", prefer: "move", blurb: "Kroppen vil gerne bevæge sig. En kort mini-træning skifter konteksten." },
+    { id: "stress", label: "Stresset", prefer: "breath", blurb: "Vi starter med åndedræt — roligt, uden at du skal præstere." },
+    { id: "bored", label: "Keder mig", prefer: "ground", blurb: "Kedsomhed åbner for vanen. Vi lander i det, der er her, med 5-4-3-2-1." },
+    { id: "irritable", label: "Irritabel", prefer: "cold", blurb: "Koldt vand i 30 sekunder. Et skift, ikke en karaktertest." },
+    { id: "miss", label: "Savner følelsen", prefer: "wave", blurb: "Følelsen du savner, er en gæst. Vi rider bølgen, med dine egne grunde ved siden af." },
+    { id: "focus", label: "Svært ved at koncentrere mig", prefer: "wave", blurb: "Koncentrationen kan være sløv et stykke tid. Vi tager bølgen først — så kan du vende tilbage." },
+    { id: "physical", label: "Fysisk trang", prefer: "wave", blurb: "Kroppen beder om nikotin. Trangen topper og falder — omkring 3–4 minutter." },
+    { id: "unknown", label: "Ved ikke", prefer: "ranked", blurb: "Vi tager det, der oftest har hjulpet dig — eller bølgen, hvis loggen endnu er kort." }
+  ];
+
+  const DEP_FIRST = [
+    { id: "5", label: "Inden for 5 minutter" },
+    { id: "30", label: "Inden for 30 minutter" },
+    { id: "60", label: "Inden for en time" },
+    { id: "60plus", label: "Efter mere end en time" }
+  ];
+
+  const DEP_SITUATIONS = [
+    { id: "work", label: "Arbejde", trigger: "Arbejde" },
+    { id: "gaming", label: "Gaming", trigger: "Gaming" },
+    { id: "alcohol", label: "Alkohol", trigger: "Alkohol" },
+    { id: "afterfood", label: "Efter mad", trigger: "Efter mad" },
+    { id: "boredom", label: "Kedsomhed", trigger: "Kedsomhed" },
+    { id: "stress", label: "Stress", trigger: "Stress" },
+    { id: "reward", label: "Belønning", trigger: "Andet" },
+    { id: "bedtime", label: "Før sengetid", trigger: "Andet" }
+  ];
+
+  const DEP_ATTEMPTS = [
+    { id: "0", label: "Ingen" },
+    { id: "1", label: "Én gang" },
+    { id: "2", label: "To gange" },
+    { id: "3plus", label: "Tre eller flere" }
+  ];
+
+  let calmSession = null;
+  let FOLLOWUP_MS = 5 * 60 * 1000;
+  let FOLLOWUP_GRACE = 20 * 60 * 1000;
+  let statsRange = 30;
+  let followupOpen = false;
+
+  function defaultDep() {
+    return {
+      firstUse: "",
+      yearsUse: null,
+      attempts: null,
+      situations: [],
+      filledAt: null,
+      skipped: false
+    };
+  }
+
+  function depActionStore() {
+    const root = $("#modal-root");
+    if (root && root._dep) return root._dep;
+    if (!state.onboarded) {
+      const d = ensureDraft();
+      d.dep = Object.assign(defaultDep(), d.dep || {});
+      return d.dep;
+    }
+    state.profile = state.profile || defaultProfile();
+    state.profile.dep = Object.assign(defaultDep(), state.profile.dep || {});
+    return state.profile.dep;
+  }
+
+  function feelingById(id) {
+    return FEELINGS.filter(function (f) { return f.id === id; })[0] || FEELINGS[FEELINGS.length - 1];
+  }
+
+  function pickIntervention(feelingId) {
+    const f = feelingById(feelingId);
+    const ranked = rankedTools();
+    const byId = {};
+    ranked.forEach(function (r) { byId[r.tool.id] = r; });
+    let prefer = f.prefer;
+    if (prefer === "ranked") {
+      if (ranked.length && ranked[0].score > 0) {
+        return {
+          tool: ranked[0].tool,
+          reason: "learned",
+          feeling: f,
+          blurb:
+            "Ud fra din egen log — «hjalp det?» — hjalp " +
+            ranked[0].tool.label +
+            " dig oftest. Vi starter der."
+        };
+      }
+      return {
+        tool: TOOLS[0],
+        reason: "default",
+        feeling: f,
+        blurb: "Vi rider bølgen. Den topper og falder."
+      };
+    }
+    const prefRow = byId[prefer];
+    if (prefRow && prefRow.score < 0 && ranked[0] && ranked[0].score > prefRow.score && ranked[0].tool.id !== prefer) {
+      return {
+        tool: ranked[0].tool,
+        reason: "learned-override",
+        feeling: f,
+        blurb:
+          f.blurb +
+          " Sidst hjalp " +
+          ranked[0].tool.label +
+          " dig bedre — vi bruger den."
+      };
+    }
+    const tool = TOOLS.filter(function (t) { return t.id === prefer; })[0] || TOOLS[0];
+    return { tool: tool, reason: "matched", feeling: f, blurb: f.blurb };
+  }
+
+  function startCalmIntake(opts) {
+    opts = opts || {};
+    closeModal();
+    closeToolScreen();
+    closePartyScreen();
+    haptic("start");
+    calmSession = {
+      intensity: opts.intensity != null ? Number(opts.intensity) : 0,
+      feeling: opts.feeling || "",
+      toolId: "",
+      blurb: "",
+      startedAt: new Date().toISOString(),
+      intensityAfter: null,
+      fromSos: true,
+      reason: ""
+    };
+    paintCalmIntake();
+  }
+
+  function paintCalmIntake() {
+    const screen = $("#wave-screen");
+    if (!screen) return;
+    const s = calmSession || { intensity: 0, feeling: "" };
+    screen.classList.remove("hidden");
+    const tab = $("#tabbar");
+    const fab = $("#fab-sos");
+    if (tab) tab.classList.add("hidden");
+    if (fab) fab.classList.add("hidden");
+    const ints = [];
+    for (let i = 1; i <= 10; i++) {
+      ints.push(
+        '<button type="button" class="calm-int' +
+          (Number(s.intensity) === i ? " on" : "") +
+          (i >= 8 ? " hi" : i >= 5 ? " mid" : "") +
+          '" data-act="calm-int" data-val="' +
+          i +
+          '">' +
+          i +
+          "</button>"
+      );
+    }
+    const feels = FEELINGS.map(function (f) {
+      return (
+        '<button type="button" class="chip feel-chip' +
+        (s.feeling === f.id ? " on" : "") +
+        '" data-act="calm-feel" data-val="' +
+        f.id +
+        '">' +
+        esc(f.label) +
+        "</button>"
+      );
+    }).join("");
+    screen.innerHTML =
+      '<div class="calm-intake">' +
+      '<p class="wave-kicker">Trang lige nu</p>' +
+      "<h2 class=\"wave-title\">Hvor stærk er den?</h2>" +
+      '<p class="wave-sub">1 er næsten væk, 10 er så stærk som den kan være. Ét tryk er nok.</p>' +
+      '<div class="calm-ints" role="group" aria-label="Styrke">' +
+      ints.join("") +
+      "</div>" +
+      '<h3 class="calm-feel-title">Hvordan har du det?</h3>' +
+      '<div class="chips feel-chips">' +
+      feels +
+      "</div>" +
+      '<div class="wave-actions">' +
+      '<button type="button" class="btn btn-ghost btn-block" data-act="calm-intake-skip">Spring over — rid bølgen</button>' +
+      "</div></div>";
+  }
+
+  function setCalmInt(n) {
+    if (!calmSession) calmSession = { intensity: 0, feeling: "", fromSos: true };
+    calmSession.intensity = Number(n) || 0;
+    const screen = $("#wave-screen");
+    if (screen) {
+      $$(".calm-int", screen).forEach(function (b) {
+        b.classList.toggle("on", Number(b.dataset.val) === calmSession.intensity);
+      });
+    }
+    maybeLaunchIntake();
+  }
+
+  function setCalmFeel(id) {
+    if (!calmSession) calmSession = { intensity: 0, feeling: "", fromSos: true };
+    calmSession.feeling = id;
+    const screen = $("#wave-screen");
+    if (screen) {
+      $$(".feel-chip", screen).forEach(function (b) {
+        b.classList.toggle("on", b.dataset.val === id);
+      });
+    }
+    maybeLaunchIntake();
+  }
+
+  function maybeLaunchIntake() {
+    if (!calmSession) return;
+    if (calmSession.intensity >= 1 && calmSession.feeling) {
+      launchIntervention(calmSession);
+    }
+  }
+
+  function launchIntervention(session, opts) {
+    opts = opts || {};
+    session = session || calmSession || {};
+    const pick = pickIntervention(session.feeling || "unknown");
+    session.toolId = pick.tool.id;
+    session.blurb = pick.blurb;
+    session.reason = pick.reason;
+    calmSession = session;
+    const id = pick.tool.id;
+    if (id === "wave") {
+      startWave({ sos: sessionToSos(session), fromCalm: true });
+      const sub = $("#wave-sub");
+      if (sub && pick.blurb) sub.textContent = pick.blurb;
+      return;
+    }
+    /* Hide intake so other tools are the only full-screen layer. Keep calmSession. */
+    const wave = document.getElementById("wave-screen");
+    if (wave) { wave.classList.add("hidden"); wave.innerHTML = ""; }
+    if (id === "breath") startBreathing({ fromCalm: true, sos: sessionToSos(session) });
+    else if (id === "ground") startGround();
+    else if (id === "cold") {
+      startCountdownTool({
+        id: "cold",
+        ms: 30000,
+        kicker: "Koldt vand",
+        title: "Koldt vand i 30 sekunder",
+        body: pick.blurb || "Vask hænder og ansigt, eller hold et koldt glas. Et skift, ikke en karaktertest."
+      });
+    } else if (id === "move") {
+      startCountdownTool({
+        id: "move",
+        ms: 30000,
+        kicker: "Mini-træning",
+        title: "Bevæg kroppen 30 sekunder",
+        body: pick.blurb || "Ti squats, stræk, eller gå på stedet. Kroppen skifter spor."
+      });
+    } else if (id === "delay") {
+      startDelay({ fromCalm: true });
+    } else {
+      startWave({ sos: sessionToSos(session), fromCalm: true });
+    }
+  }
+
+  function sessionToSos(session) {
+    session = session || calmSession || {};
+    return {
+      intensity: session.intensity || 0,
+      intensityAfter: session.intensityAfter != null ? session.intensityAfter : null,
+      feeling: session.feeling || "",
+      toolId: session.toolId || "",
+      trigger: session.trigger || "",
+      note: session.note || "",
+      fromSos: true
+    };
+  }
+
+  function afterIntervention(toolId) {
+    if (calmSession && calmSession.fromSos) {
+      closeToolScreen();
+      closeModal();
+      calmSession.toolId = toolId || calmSession.toolId;
+      showCalmOutcome(sessionToSos(calmSession), "done");
+      return true;
+    }
+    return false;
+  }
+
+  function intensityPickerHtml(group, selected, act) {
+    const btns = [];
+    for (let i = 1; i <= 10; i++) {
+      btns.push(
+        '<button type="button" class="calm-int' +
+          (Number(selected) === i ? " on" : "") +
+          (i >= 8 ? " hi" : i >= 5 ? " mid" : "") +
+          '" data-act="' +
+          (act || "chip") +
+          '" data-group="' +
+          group +
+          '" data-val="' +
+          i +
+          '">' +
+          i +
+          "</button>"
+      );
+    }
+    return '<div class="calm-ints" role="group">' + btns.join("") + "</div>";
+  }
+
+  function phaseContext() {
+    const h = hoursSinceQuit();
+    const days = Math.max(0, Math.floor(h / 24));
+    const info = compassPhase();
+    let when = "";
+    if (info.future) when = "Du er ikke begyndt endnu.";
+    else if (h < 24) when = "Du er i de første timer.";
+    else if (h < 72) {
+      when =
+        "Du er omkring dag " +
+        Math.max(1, days + (h % 24 >= 0 ? 1 : 0)) +
+        " — for mange er abstinenserne stærkest her.";
+    } else if (h < 168) {
+      when =
+        "Der er gået " +
+        days +
+        " " +
+        plural(days, "dag", "dage") +
+        ". For mange er den værste top passeret, men kroppen arbejder stadig.";
+    } else if (h < 672) {
+      when =
+        "Der er gået " +
+        days +
+        " " +
+        plural(days, "dag", "dage") +
+        ". De fysiske kerne-symptomer letter for mange i de her uger — ikke på en fast dag.";
+    } else {
+      when =
+        "Der er gået " +
+        days +
+        " " +
+        plural(days, "dag", "dage") +
+        ". Trangen, der kommer nu, er for mange mere vane og cues end kemi.";
+    }
+    return { days: days, hours: h, when: when, phase: info.phase, future: info.future };
+  }
+
+  function assistantItems() {
+    const ctx = phaseContext();
+    const when = ctx.when;
+    const slips = (state.slips || []).length;
+    const stoplinie =
+      "Hvis det føles uoverskueligt, bliver ved i uger, eller du er svært nedtrykt, så tal med en læge — eller Stoplinien på 80 31 31 31, gratis og anonym.";
+    const items = [
+      {
+        id: "irritable",
+        q: "Hvorfor er jeg så irritabel?",
+        body:
+          when +
+          " Nikotin påvirker nervesystemet. Når den forsvinder, kan tærsklen for irritation være lavere et stykke tid. For mange er det tydeligst de første dage, især dag 2–3, og letter derefter. Det er et symptom, ikke et karaktertræk. " +
+          stoplinie
+      },
+      {
+        id: "focus",
+        q: "Hvorfor kan jeg ikke koncentrere mig?",
+        body:
+          when +
+          " Nikotin har været et skub, mange bruger til at fokusere. Uden det kan tankerne føles sløve eller springende, især i den første tid. For mange letter tågen over uger — for nogle tager det længere. Det er midlertidigt for de fleste, og det er ikke et tegn på at du fejler. Korte pauser og et glas vand er et roligt sted at starte, ikke en kur."
+      },
+      {
+        id: "sleep",
+        q: "Hvorfor sover jeg dårligt?",
+        body:
+          when +
+          " Nikotin påvirker søvnen, og når den er væk, vågner mange oftere de første nætter. Det letter ofte i løbet af 1–2 uger, men ikke for alle på samme dag. Mindre koffein sent på dagen og en rolig rutine er det, mange har gavn af. Appen kan ikke love en bestemt nat."
+      },
+      {
+        id: "still",
+        q: "Hvorfor har jeg stadig trang?",
+        body:
+          when +
+          " Trang er både kemi og vane. Den fysiske del topper for mange de første dage og aftager derefter. Vanen — kaffe, efter mad, stress, fest — kan vække en bølge længe efter. En bølge varer oftest 3–4 minutter. At den kommer, betyder ikke at du er tilbage ved start."
+      },
+      {
+        id: "normal",
+        q: "Er det normalt, at jeg føler sådan?",
+        body:
+          when +
+          " Ja, for mange. Uro, irritabilitet, tåge, dårlig søvn og bølger af trang er almindelige i den første tid, og de er midlertidige. Kroppe er forskellige, så vi lover ikke en fast dag. " +
+          stoplinie
+      },
+      {
+        id: "hungry",
+        q: "Hvorfor er jeg mere sulten?",
+        body:
+          "Nikotin kan dæmpe appetitten. Når den er væk, kan sulten komme tydeligere igennem. Det er forventeligt. Det er ikke et slankeprogram. Vand, et rigtigt måltid og en kort gåtur er et roligt sted at starte. Ved rygestop er gennemsnitlig vægtøgning beskrevet i forskningen; for snus er tallene færre, og det er ikke alles historie."
+      },
+      {
+        id: "waves",
+        q: "Hvorfor kommer trangen i bølger?",
+        body:
+          "Trang er ikke en jævn linje. Den stiger, topper og daler — ofte på få minutter. For mange varer den stærkeste del omkring 3–4 minutter. Den kan vækkes af cues: kaffe, efter mad, et sted, en følelse. At ride bølgen er at vente den af, ikke at vinde en kamp for resten af livet."
+      }
+    ];
+    const dep = (state.profile && state.profile.dep) || {};
+    const sits = dep.situations || [];
+    if (sits.indexOf("bedtime") >= 0) {
+      items[2].body +=
+        " Du har markeret, at snus ofte hørte til før sengetid — den cue kan holde et stykke tid. En anden aftenrutine hjælper mere end at «tage sig sammen».";
+    }
+    if (sits.indexOf("alcohol") >= 0) {
+      items[3].body +=
+        " Alkohol er en af dine typiske situationer. For mange er fest den hyppigste fælde — planen laves, mens du er ædru.";
+    }
+    if (slips >= 3) {
+      items.push({
+        id: "relapse",
+        q: "Jeg falder i igen og igen. Hvad så?",
+        body:
+          "Du har logget flere slip. Det sletter ikke dit arbejde, og det er ikke et afsluttet kapitel. Gentagne tilbagefald er et tegn på, at det kan være fornuftigt at tale med et menneske. Stoplinien er gratis og anonym: 80 31 31 31, eller sms «Nikotinfri» til 1231."
+      });
+    }
+    return items;
+  }
+
+  function renderAssistant(el) {
+    const items = assistantItems();
+    const openId = (el && el._openId) || "";
+    const cards = items
+      .map(function (it) {
+        const on = openId === it.id;
+        return (
+          '<div class="assist-item' +
+          (on ? " open" : "") +
+          '"><button type="button" class="assist-q" data-act="assist-toggle" data-id="' +
+          it.id +
+          '"><span>' +
+          esc(it.q) +
+          "</span><span class=\"chev\">" +
+          (on ? "–" : "+") +
+          "</span></button>" +
+          (on ? '<div class="assist-a"><p>' + esc(it.body) + "</p></div>" : "") +
+          "</div>"
+        );
+      })
+      .join("");
+    const slips = (state.slips || []).length;
+    el.innerHTML = subWrap(
+      "Abstinens-assistent",
+      '<p class="page-sub">Korte, ærlige svar — uden opfundne tal, og med «for mange» i stedet for «altid». De er vejledende, ikke medicinsk rådgivning.</p>' +
+        '<div class="assist-list">' +
+        cards +
+        "</div>" +
+        (slips >= 3
+          ? '<div class="callout coral mt">Gentagne slip er et tegn på, at et menneske kan hjælpe. Ikke et nederlag.</div>'
+          : "") +
+        stoplinienCardHtml(false)
+    );
+  }
+
+  function assistantTeaserHtml() {
+    return (
+      '<div class="card reveal"><div class="card-kicker mint">Abstinens-assistent</div>' +
+      "<p>Hvorfor er jeg så irritabel? Hvorfor sover jeg dårligt? Hvorfor kommer trangen i bølger? Korte svar, uden opfundne tal.</p>" +
+      '<button type="button" class="btn btn-ghost-mint btn-sm mt" data-act="goto-assistant">Åbn spørgsmålene</button></div>'
+    );
+  }
+
+  /* ----- lifestyle insights ----- */
+
+  function dayKeyFromIso(iso) {
+    try {
+      return todayISO(new Date(iso));
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function lifestyleInsights() {
+    const out = [];
+    const checkins = (state.checkins || []).slice();
+    const cravings = state.cravings || [];
+    const slips = state.slips || [];
+    const byDay = {};
+    function bag(iso) {
+      if (!iso) return null;
+      if (!byDay[iso]) byDay[iso] = { iso: iso, strong: false, slip: false, nCrav: 0, maxInt: 0 };
+      return byDay[iso];
+    }
+    cravings.forEach(function (c) {
+      const b = bag(dayKeyFromIso(c.at));
+      if (!b) return;
+      b.nCrav++;
+      const n = Number(c.intensity) || 0;
+      if (n > b.maxInt) b.maxInt = n;
+      if (n >= 7) b.strong = true;
+    });
+    slips.forEach(function (s) {
+      const b = bag(dayKeyFromIso(s.at));
+      if (b) b.slip = true;
+    });
+    checkins.forEach(function (c) {
+      const b = bag(c.date);
+      if (!b) return;
+      b.ci = c;
+      if (Number(c.craving) >= 4) b.strong = true;
+    });
+
+    function rate(arr, pred) {
+      if (!arr.length) return 0;
+      return arr.filter(pred).length / arr.length;
+    }
+
+    const withSleep = checkins.filter(function (c) { return c.sleepHours != null && c.sleepHours !== ""; });
+    const short = withSleep.filter(function (c) { return Number(c.sleepHours) < 6; }).map(function (c) { return byDay[c.date]; }).filter(Boolean);
+    const long = withSleep.filter(function (c) { return Number(c.sleepHours) >= 7; }).map(function (c) { return byDay[c.date]; }).filter(Boolean);
+    if (short.length >= 3 && long.length >= 3 && short.length + long.length >= 7) {
+      const rs = rate(short, function (d) { return d.strong; });
+      const rl = rate(long, function (d) { return d.strong; });
+      if (rs > rl && rs - rl >= 0.2 && rs >= 0.3) {
+        out.push({
+          id: "sleep-crave",
+          kicker: "Søvn",
+          title: "På dage med under 6 timers søvn logger du oftere stærk trang",
+          body:
+            "På " +
+            Math.round(rs * 100) +
+            " % af dagene med under 6 timers søvn, mod " +
+            Math.round(rl * 100) +
+            " % når du havde sovet 7 timer eller mere. Ud fra " +
+            (short.length + long.length) +
+            " dage med både søvn og log — et mønster, ikke en lov. En tidligere aften kan gøre næste bølge lettere. Ekstra koffein som kompensation gør det ofte svært at sove igen.",
+          n: short.length + long.length
+        });
+      }
+    }
+
+    const withStress = checkins.filter(function (c) { return c.stress != null && c.stress !== ""; });
+    const hiS = withStress.filter(function (c) { return Number(c.stress) >= 4; }).map(function (c) { return byDay[c.date]; }).filter(Boolean);
+    const loS = withStress.filter(function (c) { return Number(c.stress) <= 2; }).map(function (c) { return byDay[c.date]; }).filter(Boolean);
+    if (hiS.length >= 3 && loS.length >= 3 && hiS.length + loS.length >= 7) {
+      const rs = rate(hiS, function (d) { return d.strong || d.slip; });
+      const rl = rate(loS, function (d) { return d.strong || d.slip; });
+      if (rs > rl && rs - rl >= 0.2 && rs >= 0.3) {
+        out.push({
+          id: "stress-crave",
+          kicker: "Stress",
+          title: "På dage med høj stress logger du oftere stærk trang eller et slip",
+          body:
+            "På " +
+            Math.round(rs * 100) +
+            " % af de mest stressede dage, mod " +
+            Math.round(rl * 100) +
+            " % på de roligere. Ud fra " +
+            (hiS.length + loS.length) +
+            " dage — et mønster i dine egne tal, ikke et facit. En hvis-så-plan til pressede situationer er lavet til det.",
+          n: hiS.length + loS.length,
+          act: "goto-plans",
+          actLabel: "Se planer"
+        });
+      }
+    }
+
+    const withCaf = checkins.filter(function (c) { return c.caffeine != null && c.caffeine !== ""; });
+    const hiC = withCaf.filter(function (c) { return Number(c.caffeine) >= 3; }).map(function (c) { return byDay[c.date]; }).filter(Boolean);
+    const loC = withCaf.filter(function (c) { return Number(c.caffeine) <= 1; }).map(function (c) { return byDay[c.date]; }).filter(Boolean);
+    if (hiC.length >= 3 && loC.length >= 3 && hiC.length + loC.length >= 7) {
+      const rs = rate(hiC, function (d) { return d.strong; });
+      const rl = rate(loC, function (d) { return d.strong; });
+      if (rs > rl && rs - rl >= 0.2 && rs >= 0.3) {
+        out.push({
+          id: "caffeine-crave",
+          kicker: "Koffein",
+          title: "På dage med mere koffein logger du oftere stærk trang",
+          body:
+            "På " +
+            Math.round(rs * 100) +
+            " % af dagene med tre kopper eller flere, mod " +
+            Math.round(rl * 100) +
+            " % ved én eller ingen. Ud fra " +
+            (hiC.length + loC.length) +
+            " dage. Kaffe er også en klassisk cue — sammenhængen kan være vanen såvel som koffeinen.",
+          n: hiC.length + loC.length
+        });
+      }
+    }
+
+    return out;
+  }
+
+  function lifestylePendingHtml() {
+    const n = (state.checkins || []).filter(function (c) {
+      return c.sleepHours != null || c.stress != null || c.caffeine != null;
+    }).length;
+    if (lifestyleInsights().length) return "";
+    if (n >= 7) {
+      return (
+        '<div class="card insight-card"><div class="card-kicker mint">Søvn og hverdag</div>' +
+        "<strong>Der er endnu ikke et tydeligt mønster</strong>" +
+        "<p>Du har " +
+        n +
+        " dage med søvn, stress eller koffein. Vi viser kun en sammenhæng, når forskellen er stor nok til at sige noget ærligt — ikke før.</p>" +
+        '<span class="n-sample">Et mønster, ikke en diagnose.</span></div>'
+      );
+    }
+    return (
+      '<div class="card insight-card"><div class="card-kicker mint">Søvn og hverdag</div>' +
+      "<strong>Ikke nok dage endnu</strong>" +
+      "<p>Søvn, koffein og stress kan hænge sammen med trang — men der er ikke nok dage endnu til at sige noget ærligt. Når du har omkring en uge med check-ins, vises mønstre her.</p>" +
+      '<span class="n-sample">Vi venter, til tallene kan bære det.</span></div>'
+    );
+  }
+
+  /* ----- lightweight SVG charts ----- */
+
+  function chartSvg(series, opts) {
+    opts = opts || {};
+    const w = 320;
+    const h = 128;
+    const padL = 28;
+    const padR = 8;
+    const padT = 10;
+    const padB = 22;
+    const color = opts.color || "var(--gold, #E8C47A)";
+    const pts = (series || []).map(function (p, i) {
+      return { i: i, y: p == null || p === "" || isNaN(Number(p)) ? null : Number(p), lab: opts.labels ? opts.labels[i] : "" };
+    });
+    const vals = pts.filter(function (p) { return p.y != null; }).map(function (p) { return p.y; });
+    if (!pts.length || !vals.length) {
+      return (
+        '<div class="chart-empty"><p>Ikke nok data i denne periode endnu.</p></div>'
+      );
+    }
+    let min = opts.min != null ? opts.min : Math.min.apply(null, vals);
+    let max = opts.max != null ? opts.max : Math.max.apply(null, vals);
+    if (min === max) {
+      min = Math.max(0, min - 1);
+      max = max + 1;
+    }
+    const innerW = w - padL - padR;
+    const innerH = h - padT - padB;
+    const n = pts.length;
+    function xOf(i) {
+      if (n <= 1) return padL + innerW / 2;
+      return padL + (i / (n - 1)) * innerW;
+    }
+    function yOf(v) {
+      return padT + (1 - (v - min) / (max - min)) * innerH;
+    }
+    const kind = opts.kind || "line";
+    let body = "";
+    if (kind === "bar") {
+      const bw = Math.max(2, (innerW / n) * 0.62);
+      body = pts
+        .map(function (p) {
+          if (p.y == null) return "";
+          const x = xOf(p.i) - bw / 2;
+          const y = yOf(p.y);
+          const bh = Math.max(1.5, yOf(min) - y);
+          return (
+            '<rect x="' +
+            x.toFixed(1) +
+            '" y="' +
+            y.toFixed(1) +
+            '" width="' +
+            bw.toFixed(1) +
+            '" height="' +
+            bh.toFixed(1) +
+            '" rx="2.2" fill="' +
+            color +
+            '" opacity="0.9"></rect>'
+          );
+        })
+        .join("");
+    } else {
+      const d = [];
+      let started = false;
+      pts.forEach(function (p) {
+        if (p.y == null) {
+          started = false;
+          return;
+        }
+        const cmd = started ? "L" : "M";
+        started = true;
+        d.push(cmd + " " + xOf(p.i).toFixed(1) + " " + yOf(p.y).toFixed(1));
+      });
+      const dots = pts
+        .filter(function (p) { return p.y != null; })
+        .map(function (p) {
+          return (
+            '<circle cx="' +
+            xOf(p.i).toFixed(1) +
+            '" cy="' +
+            yOf(p.y).toFixed(1) +
+            '" r="2.4" fill="' +
+            color +
+            '"></circle>'
+          );
+        })
+        .join("");
+      body =
+        '<path d="' +
+        d.join(" ") +
+        '" fill="none" stroke="' +
+        color +
+        '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>' +
+        dots;
+    }
+    const yTop = max;
+    const yBot = min;
+    const axis =
+      '<text x="2" y="' +
+      (yOf(yTop) + 4).toFixed(1) +
+      '" fill="var(--text-mute,#6E7D75)" font-size="9" font-family="Outfit,sans-serif">' +
+      esc(opts.fmt ? opts.fmt(yTop) : String(Math.round(yTop * 10) / 10)) +
+      "</text>" +
+      '<text x="2" y="' +
+      (yOf(yBot) + 4).toFixed(1) +
+      '" fill="var(--text-mute,#6E7D75)" font-size="9" font-family="Outfit,sans-serif">' +
+      esc(opts.fmt ? opts.fmt(yBot) : String(Math.round(yBot * 10) / 10)) +
+      "</text>";
+    const firstLab = opts.startLabel || "";
+    const lastLab = opts.endLabel || "I dag";
+    const labs =
+      '<text x="' +
+      padL +
+      '" y="' +
+      (h - 6) +
+      '" fill="var(--text-mute,#6E7D75)" font-size="9" font-family="Outfit,sans-serif">' +
+      esc(firstLab) +
+      '</text><text x="' +
+      (w - padR) +
+      '" y="' +
+      (h - 6) +
+      '" text-anchor="end" fill="var(--text-mute,#6E7D75)" font-size="9" font-family="Outfit,sans-serif">' +
+      esc(lastLab) +
+      "</text>";
+    return (
+      '<svg class="chart spark" viewBox="0 0 ' +
+      w +
+      " " +
+      h +
+      '" aria-label="' +
+      esc(opts.aria || "Graf") +
+      '">' +
+      axis +
+      body +
+      labs +
+      "</svg>"
+    );
+  }
+
+  function statsSeries(rangeDays) {
+    const now = new Date();
+    const days = [];
+    for (let i = rangeDays - 1; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000);
+      days.push(todayISO(d));
+    }
+    const cravings = state.cravings || [];
+    const checkins = state.checkins || [];
+    const by = {};
+    days.forEach(function (iso) {
+      by[iso] = { int: [], after: [], resisted: 0, total: 0, sleep: null, mood: null, use: null };
+    });
+    cravings.forEach(function (c) {
+      const iso = dayKeyFromIso(c.at);
+      if (!by[iso]) return;
+      by[iso].total++;
+      if (c.resisted) by[iso].resisted++;
+      if (c.intensity) by[iso].int.push(Number(c.intensity));
+      if (c.intensityAfter != null) by[iso].after.push(Number(c.intensityAfter));
+    });
+    checkins.forEach(function (c) {
+      if (!by[c.date]) return;
+      if (c.sleepHours != null) by[c.date].sleep = Number(c.sleepHours);
+      if (c.mood) by[c.date].mood = Number(c.mood);
+    });
+    const taperOn = state.taper && state.taper.enabled;
+    const logs = (state.taper && state.taper.logs) || {};
+    if (taperOn) {
+      days.forEach(function (iso) {
+        if (logs[iso] != null && logs[iso] !== "") by[iso].use = Number(logs[iso]);
+      });
+    }
+    function avg(arr) {
+      if (!arr.length) return null;
+      return arr.reduce(function (a, b) { return a + b; }, 0) / arr.length;
+    }
+    const intensity = days.map(function (iso) { return avg(by[iso].int); });
+    const handled = days.map(function (iso) {
+      return by[iso].total ? (by[iso].resisted / by[iso].total) * 100 : null;
+    });
+    const sleep = days.map(function (iso) { return by[iso].sleep; });
+    const mood = days.map(function (iso) { return by[iso].mood; });
+    const use = days.map(function (iso) { return by[iso].use; });
+    let rTot = 0, tTot = 0;
+    days.forEach(function (iso) {
+      rTot += by[iso].resisted;
+      tTot += by[iso].total;
+    });
+    const start = new Date(now.getTime() - (rangeDays - 1) * 86400000);
+    const startLabel = fmtDate(start.toISOString(), { day: "numeric", month: "short" });
+    return {
+      days: days,
+      intensity: intensity,
+      handled: handled,
+      sleep: sleep,
+      mood: mood,
+      use: use,
+      taperOn: taperOn,
+      share: tTot ? rTot / tTot : null,
+      nCrav: tTot,
+      nRes: rTot,
+      startLabel: startLabel
+    };
+  }
+
+  function renderStats(el) {
+    const range = statsRange || 30;
+    const data = statsSeries(range);
+    const ranges = [7, 30, 90, 365];
+    const chips = ranges
+      .map(function (n) {
+        return (
+          '<button type="button" class="chip' +
+          (range === n ? " on" : "") +
+          '" data-act="stats-range" data-val="' +
+          n +
+          '">' +
+          (n === 365 ? "1 år" : n + " dage") +
+          "</button>"
+        );
+      })
+      .join("");
+    const shareTxt =
+      data.share == null
+        ? "Ingen loggede trange i perioden."
+        : Math.round(data.share * 100) +
+          " % af " +
+          data.nCrav +
+          " loggede trange blev håndteret uden nikotin.";
+    const blocks = [
+      {
+        kicker: "Trangens styrke",
+        sub: "Gennemsnit pr. dag, når du har logget en styrke.",
+        svg: chartSvg(data.intensity, {
+          color: "#E07A5F",
+          min: 0,
+          max: 10,
+          startLabel: data.startLabel,
+          aria: "Trangens styrke",
+          kind: "line"
+        })
+      },
+      {
+        kicker: "Håndteret uden nikotin",
+        sub: shareTxt,
+        svg: chartSvg(data.handled, {
+          color: "#7EE2A8",
+          min: 0,
+          max: 100,
+          startLabel: data.startLabel,
+          aria: "Andel uden nikotin",
+          kind: "bar",
+          fmt: function (v) { return Math.round(v) + " %"; }
+        })
+      },
+      {
+        kicker: "Søvn",
+        sub: "Timer, fra dine check-ins.",
+        svg: chartSvg(data.sleep, {
+          color: "#7EB8C9",
+          min: 0,
+          max: 12,
+          startLabel: data.startLabel,
+          aria: "Søvn i timer",
+          kind: "line",
+          fmt: function (v) { return (Math.round(v * 10) / 10) + " t"; }
+        })
+      },
+      {
+        kicker: "Humør",
+        sub: "Din egen vurdering, 1–5.",
+        svg: chartSvg(data.mood, {
+          color: "#E8C47A",
+          min: 1,
+          max: 5,
+          startLabel: data.startLabel,
+          aria: "Humør",
+          kind: "line"
+        })
+      }
+    ];
+    if (data.taperOn) {
+      blocks.push({
+        kicker: "Forbrug under nedtrapning",
+        sub: "Poser pr. dag, som du har logget.",
+        svg: chartSvg(data.use, {
+          color: "#C2A8DC",
+          min: 0,
+          startLabel: data.startLabel,
+          aria: "Forbrug",
+          kind: "bar"
+        })
+      });
+    }
+    const html = blocks
+      .map(function (b) {
+        return (
+          '<div class="card chart-wrap"><div class="card-kicker mint">' +
+          esc(b.kicker) +
+          "</div><p class=\"chart-sub\">" +
+          esc(b.sub) +
+          "</p>" +
+          b.svg +
+          "</div>"
+        );
+      })
+      .join("");
+    el.innerHTML = subWrap(
+      "Statistik",
+      '<p class="page-sub">Udvikling over 7, 30, 90 eller 365 dage — kun dine egne log, uden at vi finder på tal.</p>' +
+        '<div class="chips stats-ranges">' +
+        chips +
+        "</div>" +
+        html
+    );
+  }
+
+  /* ----- XP ----- */
+
+  function xpToReach(level) {
+    if (level <= 1) return 0;
+    return 15 * (level - 1) + 5 * (level - 1) * level;
+  }
+
+  function xpInfo(xp) {
+    xp = Math.max(0, Number(xp != null ? xp : state.xp) || 0);
+    let level = 1;
+    while (xpToReach(level + 1) <= xp && level < 99) level++;
+    const floor = xpToReach(level);
+    const next = xpToReach(level + 1);
+    const need = next - floor;
+    const have = xp - floor;
+    return { xp: xp, level: level, floor: floor, next: next, have: have, need: need, p: need ? have / need : 1 };
+  }
+
+  function backfillXp(s) {
+    s = s || state;
+    if (s.xpBackfilled) return s;
+    let xp = Number(s.xp) || 0;
+    (s.cravings || []).forEach(function (c) {
+      if (c.resisted && c.usedNf) xp += 5;
+      else if (c.resisted) xp += 10;
+    });
+    (s.checkins || []).forEach(function () { xp += 5; });
+    s.xp = xp;
+    s.xpBackfilled = true;
+    s.xpLevelSeen = Math.max(Number(s.xpLevelSeen) || 1, xpInfo(xp).level);
+    return s;
+  }
+
+  function awardXp(amount, reason, uniqueKey) {
+    amount = Number(amount) || 0;
+    if (amount <= 0) return null;
+    state.xpAwarded = state.xpAwarded || {};
+    if (uniqueKey && state.xpAwarded[uniqueKey]) return null;
+    const before = xpInfo(state.xp || 0);
+    state.xp = (Number(state.xp) || 0) + amount;
+    if (uniqueKey) state.xpAwarded[uniqueKey] = true;
+    const after = xpInfo(state.xp);
+    state.xpLevelSeen = state.xpLevelSeen || before.level;
+    if (after.level > (Number(state.xpLevelSeen) || 1)) {
+      state.xpLevelSeen = after.level;
+      save();
+      toast("Niveau " + after.level + ". Du møder op — det er det, der tæller.", "gold");
+    } else {
+      save();
+    }
+    return after;
+  }
+
+  function xpBarHtml(compact) {
+    const info = xpInfo();
+    const pct = Math.max(0, Math.min(100, info.p * 100));
+    return (
+      '<div class="xp-card' +
+      (compact ? " compact" : "") +
+      '"><div class="xp-top"><span class="xp-lvl">Niveau ' +
+      info.level +
+      '</span><span class="xp-num">' +
+      info.xp +
+      " XP</span></div>" +
+      '<div class="xp-track" aria-hidden="true"><i style="width:' +
+      pct.toFixed(1) +
+      '%"></i></div>' +
+      (compact
+        ? ""
+        : '<p class="xp-hint">XP for det, du gør: trange du klarer, og check-ins. Et slip tager aldrig XP.</p>') +
+      "</div>"
+    );
+  }
+
+  /* ----- dependence profile ----- */
+
+  function depOf(p) {
+    const d = (p && p.dep) || (state.profile && state.profile.dep) || {};
+    return Object.assign(defaultDep(), d);
+  }
+
+  function depIsFilled(d) {
+    d = d || depOf();
+    return !!(d.filledAt || d.firstUse || d.yearsUse != null || (d.situations && d.situations.length));
+  }
+
+  function depPromptDue() {
+    const d = depOf();
+    if (depIsFilled(d) || d.skipped) return false;
+    if (!state.onboarded) return false;
+    return true;
+  }
+
+  function firstUseLabel(id) {
+    const r = DEP_FIRST.filter(function (x) { return x.id === id; })[0];
+    return r ? r.label : "";
+  }
+
+  function depSummaryHtml(d) {
+    d = d || depOf();
+    if (!depIsFilled(d)) {
+      return '<p class="empty">Profilen er endnu ikke udfyldt. Det tager et øjeblik, og rådene kan blive mere præcise.</p>';
+    }
+    const parts = [];
+    if (d.firstUse) {
+      const strong = d.firstUse === "5" || d.firstUse === "30";
+      parts.push(
+        "<p><strong>Første pose.</strong> " +
+          esc(firstUseLabel(d.firstUse)) +
+          " efter du vågner." +
+          (strong
+            ? " For mange er det et tegn på stærkere fysisk afhængighed — ikke en diagnose, bare et mønster, der er værd at kende."
+            : " Den kommer senere på dagen. Vanen kan stadig være stærk i bestemte situationer.") +
+          "</p>"
+      );
+    }
+    const mg = (state.profile && state.profile.nicotineMg) || 0;
+    if (mg) {
+      parts.push("<p><strong>Styrke.</strong> Du brugte poser på " + esc(String(mg)) + " mg.</p>");
+    }
+    if (d.yearsUse != null && d.yearsUse !== "") {
+      const y = Number(d.yearsUse);
+      parts.push(
+        "<p><strong>År.</strong> " +
+          esc(String(y)) +
+          " " +
+          plural(y, "år", "år") +
+          " med snus.</p>"
+      );
+    }
+    if (d.attempts != null && d.attempts !== "") {
+      const lab = (DEP_ATTEMPTS.filter(function (a) { return a.id === String(d.attempts); })[0] || {}).label;
+      if (String(d.attempts) === "0") {
+        parts.push("<p><strong>Forsøg.</strong> Første gang — velkommen. Det er et stykke arbejde, ikke en prøve.</p>");
+      } else {
+        parts.push(
+          "<p><strong>Forsøg.</strong> " +
+            esc(lab || String(d.attempts)) +
+            " før. Det er erfaring, ikke et nederlag.</p>"
+        );
+      }
+    }
+    const sits = (d.situations || [])
+      .map(function (id) {
+        const r = DEP_SITUATIONS.filter(function (x) { return x.id === id; })[0];
+        return r ? r.label : "";
+      })
+      .filter(Boolean);
+    if (sits.length) {
+      parts.push("<p><strong>Typiske situationer.</strong> " + esc(sits.join(" · ")) + ".</p>");
+    }
+    const tip = depTailorTip(d);
+    if (tip) parts.push('<div class="honest-note mint">' + esc(tip) + "</div>");
+    return '<div class="dep-summary">' + parts.join("") + "</div>";
+  }
+
+  function depTailorTip(d) {
+    d = d || depOf();
+    const sits = d.situations || [];
+    if (d.firstUse === "5") {
+      const has = !!ifThenFor("Morgenen");
+      return has
+        ? "Den første pose kommer tidligt. Du har allerede en plan for morgenen — brug den, før vanen kører af sig selv."
+        : "Den første pose kommer tidligt. En hvis-så-plan for morgenen hjælper, før vanen kører af sig selv.";
+    }
+    if (sits.indexOf("alcohol") >= 0) {
+      return "Alkohol er en af dine situationer. Fest er for mange den hyppigste fælde — planen laves, mens du er ædru.";
+    }
+    if (sits.indexOf("gaming") >= 0) {
+      return "Gaming er en af dine situationer. Et glas vand ved siden af, og bølgen hvis suget kommer, er et roligt sted at starte.";
+    }
+    if (sits.indexOf("stress") >= 0) {
+      return "Stress er en af dine situationer. En kort pause — vand, en gåtur, åndedræt — før du beslutter noget, er ofte nok til at ride den af.";
+    }
+    if (sits.indexOf("bedtime") >= 0) {
+      return "Snus før sengetid er en cue, der kan holde. En anden aftenrutine hjælper mere end at vente til du er træt.";
+    }
+    if (sits.indexOf("work") >= 0) {
+      return "Arbejde er en af dine situationer. En plan til koncentration og pauser — uden pose — kan ligge klar, før dagen begynder.";
+    }
+    return "";
+  }
+
+  function depFormHtml(d, opts) {
+    d = Object.assign(defaultDep(), d || {});
+    opts = opts || {};
+    const first = DEP_FIRST.map(function (f) {
+      return (
+        '<button type="button" class="chip' +
+        (d.firstUse === f.id ? " on" : "") +
+        '" data-act="dep-first" data-val="' +
+        f.id +
+        '">' +
+        esc(f.label) +
+        "</button>"
+      );
+    }).join("");
+    const atts = DEP_ATTEMPTS.map(function (f) {
+      return (
+        '<button type="button" class="chip' +
+        (String(d.attempts) === f.id ? " on" : "") +
+        '" data-act="dep-attempts" data-val="' +
+        f.id +
+        '">' +
+        esc(f.label) +
+        "</button>"
+      );
+    }).join("");
+    const sits = DEP_SITUATIONS.map(function (f) {
+      const on = (d.situations || []).indexOf(f.id) >= 0;
+      return (
+        '<button type="button" class="chip' +
+        (on ? " on" : "") +
+        '" data-act="dep-sit" data-val="' +
+        f.id +
+        '">' +
+        esc(f.label) +
+        "</button>"
+      );
+    }).join("");
+    return (
+      (opts.lead
+        ? '<p class="' + (opts.leadClass || "ob-lead") + '">' + opts.lead + "</p>"
+        : "") +
+      '<div class="field"><label>Hvor hurtigt efter du vågner, tog du den første pose?</label></div>' +
+      '<div class="chips" id="dep-first">' +
+      first +
+      "</div>" +
+      '<div class="field mt"><label>Hvor mange år har du brugt snus?</label>' +
+      '<div class="stepper"><button type="button" data-act="step" data-dir="-1" data-target="dep-years">−</button>' +
+      '<input id="dep-years" inputmode="numeric" placeholder="Fx 5" value="' +
+      esc(d.yearsUse != null && d.yearsUse !== "" ? String(d.yearsUse) : "") +
+      '">' +
+      '<button type="button" data-act="step" data-dir="1" data-target="dep-years">+</button></div></div>' +
+      '<div class="field mt"><label>Har du prøvet at stoppe før?</label></div>' +
+      '<div class="chips" id="dep-attempts">' +
+      atts +
+      "</div>" +
+      '<div class="field mt"><label>Typiske situationer (vælg flere)</label></div>' +
+      '<div class="chips" id="dep-sits">' +
+      sits +
+      "</div>"
+    );
+  }
+
+  function readDepForm(source) {
+    const cur = depOf(source);
+    const yearsEl = $("#dep-years");
+    const years = yearsEl ? parseNum(yearsEl.value) : cur.yearsUse;
+    return {
+      firstUse: cur.firstUse,
+      yearsUse: isNaN(Number(years)) ? cur.yearsUse : Number(years),
+      attempts: cur.attempts,
+      situations: (cur.situations || []).slice(),
+      filledAt: cur.filledAt,
+      skipped: cur.skipped
+    };
+  }
+
+  function saveDepFromForm(opts) {
+    opts = opts || {};
+    const root = $("#modal-root");
+    const draft = (root && root._dep) || (obDraft && obDraft.dep) || depOf();
+    const yearsEl = $("#dep-years");
+    const years = yearsEl ? parseNum(yearsEl.value) : draft.yearsUse;
+    const dep = Object.assign(defaultDep(), draft, {
+      yearsUse: isNaN(Number(years)) ? draft.yearsUse : Number(years),
+      filledAt: opts.skip ? null : new Date().toISOString(),
+      skipped: !!opts.skip
+    });
+    if (!opts.skip && !dep.firstUse && (dep.yearsUse == null) && !(dep.situations && dep.situations.length) && !dep.attempts) {
+      dep.skipped = true;
+      dep.filledAt = null;
+    }
+    state.profile = state.profile || defaultProfile();
+    state.profile.dep = dep;
+    save();
+    return dep;
+  }
+
+  function openDepForm() {
+    const dep = depOf();
+    const rootPrep = { firstUse: dep.firstUse, yearsUse: dep.yearsUse, attempts: dep.attempts, situations: (dep.situations || []).slice() };
+    openSheet(
+      "<h2>Din afhængighedsprofil</h2>" +
+        '<p class="sheet-lead">Et par spørgsmål, så rådene kan ramme dine situationer. Ikke en diagnose — og du kan ændre det senere.</p>' +
+        depFormHtml(rootPrep, {}) +
+        '<button type="button" class="btn btn-primary btn-block mt" data-act="dep-save">Gem</button>' +
+        '<button type="button" class="btn btn-ghost btn-block mt" data-act="dep-skip">Ikke nu</button>'
+    );
+    const root = $("#modal-root");
+    root._dep = rootPrep;
+  }
+
+  function renderDepPage(el) {
+    el.innerHTML = subWrap(
+      "Afhængighedsprofil",
+      '<p class="page-sub">Et enkelt billede af din afhængighed — til at tilpasse råd, ikke som en karakter eller en diagnose.</p>' +
+        '<div class="card">' +
+        depSummaryHtml() +
+        "</div>" +
+        '<button type="button" class="btn btn-ghost-mint btn-block mt" data-act="dep-edit">Rediger</button>'
+    );
+  }
+
+  function depPromptHtml() {
+    if (!depPromptDue()) return "";
+    return (
+      '<div class="card reveal" id="dep-prompt"><div class="checkin-cta"><div class="now-card-body"><div class="card-kicker gold">Din profil</div>' +
+      "<strong>Udfyld din afhængighedsprofil</strong>" +
+      "<p>Et øjeblik — hvor hurtigt den første pose kom, og i hvilke situationer. Så kan rådene ramme bedre.</p>" +
+      '</div><div class="now-card-actions"><button type="button" class="btn btn-gold btn-sm" data-act="dep-edit">Udfyld</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" data-act="dep-skip">Ikke nu</button></div></div></div>'
+    );
+  }
+
+  /* ----- follow-up ----- */
+
+  function followupRemaining() {
+    const f = state.followup;
+    if (!f || !f.at) return 0;
+    return Math.max(0, new Date(f.at).getTime() - Date.now());
+  }
+
+  function scheduleFollowup(opts) {
+    opts = opts || {};
+    const ms = opts.ms != null ? opts.ms : FOLLOWUP_MS;
+    state.followup = {
+      at: new Date(Date.now() + ms).toISOString(),
+      cravingId: opts.cravingId || null,
+      intensityBefore: opts.intensityAfter != null ? opts.intensityAfter : opts.intensity || 0,
+      feeling: opts.feeling || (calmSession && calmSession.feeling) || "",
+      shown: false
+    };
+    save();
+  }
+
+  function cancelFollowup() {
+    state.followup = null;
+    followupOpen = false;
+    save();
+  }
+
+  function tickFollowup() {
+    const f = state.followup;
+    if (!f) {
+      const el = $("#followup-count");
+      if (el && el.parentElement) {
+        /* banner stale */
+      }
+      return;
+    }
+    const t = new Date(f.at).getTime();
+    if (!isFinite(t)) return;
+    const now = Date.now();
+    const remEl = $("#followup-count");
+    if (now < t) {
+      if (remEl) {
+        const rem = t - now;
+        const m = Math.floor(rem / 60000);
+        const sec = Math.floor((rem % 60000) / 1000);
+        const txt = m + ":" + pad(sec);
+        if (remEl.textContent !== txt) remEl.textContent = txt;
+      }
+      return;
+    }
+    if (now > t + FOLLOWUP_GRACE) {
+      state.followup = null;
+      save();
+      return;
+    }
+    if (f.shown || followupOpen) return;
+    const busy = function (id) {
+      const el = document.getElementById(id);
+      return el && !el.classList.contains("hidden") && el.innerHTML;
+    };
+    if (busy("wave-screen") || busy("party-screen") || busy("tool-screen") || busy("breath-screen")) return;
+    if ($("#modal-root") && $("#modal-root").innerHTML && $("#modal-root").querySelector(".sheet, .dialog")) return;
+    showFollowupSheet();
+  }
+
+  function showFollowupSheet() {
+    if (!state.followup) return;
+    followupOpen = true;
+    state.followup.shown = true;
+    save();
+    const before = state.followup.intensityBefore;
+    openSheet(
+      "<h2>Hvordan går det nu?</h2>" +
+        '<p class="sheet-lead">Der er gået omkring fem minutter' +
+        (before ? " — trangen stod på " + before : "") +
+        ". Kun mens appen er åben; vi kan ikke spørge, når den er lukket.</p>" +
+        "<p class=\"field\"><label>Hvor stærk er den nu?</label></p>" +
+        intensityPickerHtml("follow-int", 0, "follow-int") +
+        '<button type="button" class="btn btn-primary btn-block mt" data-act="follow-ok" data-kind="easier">Det letter</button>' +
+        '<button type="button" class="btn btn-ghost-mint btn-block mt" data-act="follow-ok" data-kind="same">Stadig her</button>' +
+        '<button type="button" class="btn btn-ghost btn-block mt" data-act="follow-ok" data-kind="fell" style="color:var(--coral-soft)">Jeg faldt</button>' +
+        '<button type="button" class="btn btn-ghost btn-block mt" data-act="follow-dismiss">Luk</button>'
+    );
+    const root = $("#modal-root");
+    root._follow = { intensity: 0, kind: "" };
+  }
+
+  function saveFollowup(kind) {
+    const root = $("#modal-root");
+    const data = (root && root._follow) || {};
+    const f = state.followup || {};
+    const intensity = Number(data.intensity) || 0;
+    if (f.cravingId) {
+      const c = (state.cravings || []).filter(function (x) { return x.id === f.cravingId; })[0];
+      if (c) {
+        c.followupIntensity = intensity || null;
+        c.followupKind = kind;
+        c.followupAt = new Date().toISOString();
+      }
+    }
+    awardXp(3, "followup", "fu:" + (f.cravingId || f.at));
+    cancelFollowup();
+    closeModal();
+    followupOpen = false;
+    if (kind === "fell") {
+      openSlip({});
+      return;
+    }
+    toast(kind === "easier" ? "Godt. Den gik den rigtige vej." : "Tak fordi du kiggede ind.");
+    if (view === "home") render();
+  }
+
+  function followupBannerHtml() {
+    const f = state.followup;
+    if (!f || f.shown) return "";
+    const rem = followupRemaining();
+    if (rem <= 0) return "";
+    const m = Math.floor(rem / 60000);
+    const sec = Math.floor((rem % 60000) / 1000);
+    return (
+      '<div class="card reveal follow-banner" id="follow-banner"><div class="checkin-cta"><div class="now-card-body"><div class="card-kicker mint">Om lidt</div>' +
+      "<strong>Jeg spørger igen om <span id=\"followup-count\">" +
+      m +
+      ":" +
+      pad(sec) +
+      "</span></strong>" +
+      "<p>Kun mens appen er åben — beskeder virker ikke, når den er lukket.</p>" +
+      '</div><button type="button" class="btn btn-ghost btn-sm" data-act="follow-cancel">Annuller</button></div></div>'
+    );
+  }
+
+  /* ----- check-in compact fields ----- */
+
+  function ciChipRow(label, group, options, selected, hint) {
+    const btns = options
+      .map(function (o) {
+        const val = String(o.val);
+        const on = selected != null && String(selected) === val;
+        return (
+          '<button type="button" class="chip' +
+          (on ? " on" : "") +
+          '" data-act="chip" data-group="' +
+          group +
+          '" data-val="' +
+          esc(val) +
+          '">' +
+          esc(o.label) +
+          "</button>"
+        );
+      })
+      .join("");
+    return (
+      '<div class="field ci-row"><label>' +
+      esc(label) +
+      "</label>" +
+      '<div class="chips ci-chips" id="ci-' +
+      group +
+      '">' +
+      btns +
+      "</div>" +
+      (hint ? '<p class="hint">' + esc(hint) + "</p>" : "") +
+      "</div>"
+    );
   }
 
 
@@ -3534,6 +5015,7 @@
       '<div class="sheet">' +
       (showCompassFirst ? compass : "") +
       nowHelpHtml() +
+      followupBannerHtml() +
       (streakStats().hadReset
         ? '<p class="streak-line">Længste periode ' +
           Math.floor(streakStats().longest) +
@@ -3547,6 +5029,7 @@
         : "") +
       moneyCompactHtml(s) +
       context +
+      depPromptHtml() +
       (showCompassFirst ? "" : compass) +
       quote +
       checkinDone +
@@ -3664,6 +5147,10 @@
       '<h1 class="page-title">Sundhed</h1>' +
       '<p class="page-sub">Hvor du er i forløbet — ærligt, med spænd, ikke løfter. Milepælene under er vejledende, ikke medicinsk rådgivning.</p>' +
       compassCardHtml({ full: true }) +
+      assistantTeaserHtml() +
+      '<div class="card reveal"><div class="card-kicker gold">Statistik</div>' +
+      "<p>Styrke, andel uden nikotin, søvn og humør — over 7, 30, 90 eller 365 dage.</p>" +
+      '<button type="button" class="btn btn-ghost-mint btn-sm mt" data-act="goto-stats">Se grafer</button></div>' +
       (s.future ? "" : journeyTrees(s.days, { wide: true })) +
       day28Html(s, { health: true, force: true }) +
       '<div class="section-label">Abstinens-forløbet</div>' +
@@ -3839,6 +5326,7 @@
       '<div class="section-label">Sidste 14 dage</div>' +
       '<div class="card chart-wrap">' +
       cravingChart(list) +
+      '<button type="button" class="btn btn-ghost-mint btn-sm mt" data-act="goto-stats">Flere grafer · 7 til 365 dage</button>' +
       "</div>" +
       '<div class="section-label">Efter udløser</div>' +
       '<div class="card">' +
@@ -3952,6 +5440,9 @@
     if (morePage === "insights") return renderInsights(el);
     if (morePage === "recap") return renderRecap(el);
     if (morePage === "letter") return renderLetter(el);
+    if (morePage === "assistant") return renderAssistant(el);
+    if (morePage === "stats") return renderStats(el);
+    if (morePage === "dep") return renderDepPage(el);
 
     const ciN = (state.checkins || []).length;
     const slipN = (state.slips || []).length;
@@ -3962,6 +5453,7 @@
       '<div class="page">' +
       '<h1 class="page-title">Mere</h1>' +
       '<p class="page-sub">Værktøjer, hjælp, historik og dine data.</p>' +
+      xpBarHtml() +
       '<div class="section-label">Værktøjer</div>' +
       '<div class="rows">' +
       row("plans", "🗺️", "", "Hvis-så-planer", planN ? planN + " planer" : "Bind triggere til en handling", "") +
@@ -3972,6 +5464,9 @@
       row("insights", "🔭", "sky", "Indsigt", "Mønstre i dine egne log — med forbehold", "") +
       row("recap", "📅", "mint", "Ugens overblik", "Ugen indtil nu", "") +
       row("letter", "✉️", "gold", "Brev til mig", letterState().written ? (letterState().unlocked ? "Klar til at læse" : "Åbnes på dag 30") : "Skriv til dig selv om 30 dage", "") +
+      row("stats", "📊", "sky", "Statistik", "Styrke, søvn, humør — 7 til 365 dage", "") +
+      row("assistant", "💬", "mint", "Abstinens-assistent", "Hvorfor jeg føler sådan — ærlige svar", "") +
+      row("dep", "🧩", "gold", "Afhængighedsprofil", depIsFilled() ? "Din profil" : "Udfyld, så rådene rammer bedre", "") +
       "</div>" +
       '<div class="section-label">Hjælp</div>' +
       '<div class="rows">' +
@@ -4338,7 +5833,7 @@
         '<div class="hr"></div>' +
         '<p class="fineprint">Snusfri er ikke medicinsk rådgivning og erstatter ikke samtale med en læge eller anden sundhedsfaglig. Milepælene er vejledende og formuleret forsigtigt — alle reagerer forskelligt.</p>' +
         '<p class="fineprint mt">Som web-app kan Snusfri ikke lægge en rigtig widget på iOS-hjemmeskærmen — det kræver en native skal. Forsiden er lavet som et kompakt overblik, og beskederne i appen viser dage og sparede kroner, når du åbner den.</p>' +
-        '<p class="fineprint mt">Version 1.4 · november 2026 · Service worker v11. Lavet til at ligge på din hjemmeskærm.</p></div>'
+        '<p class="fineprint mt">Version 1.5 · november 2026 · Service worker v12. Lavet til at ligge på din hjemmeskærm.</p></div>'
     );
   }
 
@@ -4750,6 +6245,7 @@
   }
 
   function logCraving(opts) {
+    opts = opts || {};
     const c = {
       id: uid(),
       at: new Date().toISOString(),
@@ -4759,12 +6255,19 @@
       note: opts.note || "",
       resisted: !!opts.resisted,
       usedBreathing: !!opts.usedBreathing,
-      usedWave: !!opts.usedWave
+      usedWave: !!opts.usedWave,
+      usedNf: !!opts.usedNf,
+      feeling: opts.feeling || "",
+      toolUsed: opts.toolUsed || "",
+      followupIntensity: null,
+      followupKind: "",
+      followupAt: null
     };
     state.cravings.push(c);
     if (c.usedWave && c.resisted) {
       state.wavesRidden = (Number(state.wavesRidden) || 0) + 1;
     }
+    if (c.resisted) awardXp(c.usedNf ? 5 : 10, "craving", "cr:" + c.id);
     save();
     checkAchievements(false);
     return c;
@@ -4820,10 +6323,13 @@
   function startWave(opts) {
     opts = opts || {};
     haptic("start");
-    const sos = opts.sos || (function () { try { return readSos(); } catch (e) { return {}; } })();
+    const sos = opts.sos || (function () { try { return readSos(); } catch (e) { return {}; } })() || {};
+    sos.usedWave = true;
+    sos.toolId = sos.toolId || "wave";
     closeModal();
     const screen = $("#wave-screen");
     if (!screen) return;
+    screen._sos = sos;
     const waves = Number(state.wavesRidden) || 0;
     const plan = ifThenFor(sos.trigger);
     const r0 = reasonsList()[0];
@@ -4946,8 +6452,13 @@
       screen.innerHTML = "";
       screen._sos = null;
     }
+    /* leave calmSession if an offer is about to use it; callers clear when done. */
     if (waveRaf) cancelAnimationFrame(waveRaf);
     waveStop = null;
+    const breath = document.getElementById("breath-screen");
+    if (breath) { breath.classList.add("hidden"); breath.innerHTML = ""; }
+    breathStop = null;
+    if (typeof closeToolScreen === "function") { try { closeToolScreen(); } catch (e) {} }
     if (state.onboarded) {
       const tab = $("#tabbar");
       if (tab) tab.classList.remove("hidden");
@@ -5286,8 +6797,9 @@
   }
 
 
-  function startBreathing() {
-    const sos = readSos();
+  function startBreathing(opts) {
+    opts = opts || {};
+    const sos = opts.sos || (calmSession ? sessionToSos(calmSession) : readSos());
     closeModal();
     const screen = $("#breath-screen");
     screen.classList.remove("hidden");
@@ -5366,6 +6878,7 @@
     const screen = $("#breath-screen");
     screen.classList.add("hidden");
     screen.innerHTML = "";
+    if (afterIntervention("breath")) return;
     openSheet(
       "<h2>" +
         (skipped ? "Fair nok" : "Godt klaret") +
@@ -5544,12 +7057,23 @@
           "</button>"
       );
     }
+    const nChip = function (from, to, extra) {
+      const out = [];
+      for (let i = from; i <= to; i++) out.push({ val: i, label: String(i) + (extra && i === to ? extra : "") });
+      return out;
+    };
     openSheet(
       "<h2>Dagens check-in</h2>" +
-        '<p class="sheet-lead">Hvordan har du det i dag?</p>' +
+        '<p class="sheet-lead">Under 15 sekunder. Kun det, du har lyst til at sige.</p>' +
         '<div class="field"><div class="moods" id="ci-mood">' +
         moodBtns +
         "</div></div>" +
+        ciChipRow("Energi", "energy", nChip(1, 5), existing && existing.energy, "") +
+        ciChipRow("Stress", "stress", nChip(1, 5), existing && existing.stress, "1 er rolig, 5 er stærkt presset.") +
+        ciChipRow("Søvn, timer", "sleepHours", [{ val: 4, label: "4" }, { val: 5, label: "5" }, { val: 6, label: "6" }, { val: 7, label: "7" }, { val: 8, label: "8" }, { val: 9, label: "9" }, { val: 10, label: "10+" }], existing && existing.sleepHours, "") +
+        ciChipRow("Søvnkvalitet", "sleepQuality", [{ val: "bad", label: "Dårlig" }, { val: "ok", label: "Okay" }, { val: "good", label: "God" }], existing && existing.sleepQuality, "") +
+        ciChipRow("Koffein, kopper", "caffeine", [{ val: 0, label: "0" }, { val: 1, label: "1" }, { val: 2, label: "2" }, { val: 3, label: "3" }, { val: 4, label: "4+" }], existing && existing.caffeine, "") +
+        ciChipRow("Motion (valgfri)", "exercise", [{ val: "none", label: "Ingen" }, { val: "some", label: "Lidt" }, { val: "yes", label: "Ja" }], existing && existing.exercise, "") +
         '<div class="field"><label>Trang i dag</label><div class="intensity" id="ci-crave">' +
         crave.join("") +
         "</div>" +
@@ -5557,16 +7081,21 @@
         '<div class="field"><label>Note (valgfri)</label><textarea id="ci-note" class="input" maxlength="300">' +
         esc(existing ? existing.note || "" : "") +
         "</textarea></div>" +
-        '<button class="btn btn-primary btn-block" data-act="checkin-save">Gem</button>'
+        '<div class="ci-actions"><button class="btn btn-primary btn-block" data-act="checkin-save">Gem</button></div>'
     );
     const root = $("#modal-root");
     root._ci = {
       mood: existing ? existing.mood : 0,
       craving: existing ? existing.craving : 0,
+      energy: existing ? existing.energy : null,
+      stress: existing ? existing.stress : null,
+      sleepHours: existing ? existing.sleepHours : null,
+      sleepQuality: existing ? existing.sleepQuality : "",
+      caffeine: existing ? existing.caffeine : null,
+      exercise: existing ? existing.exercise : "",
       date: ciDate
     };
   }
-
   function saveCheckin() {
     const root = $("#modal-root");
     const data = (root && root._ci) || {};
@@ -5577,19 +7106,31 @@
     const note = (($("#ci-note") || {}).value || "").trim();
     const today = (root && root._ci && root._ci.date) || todayISO(new Date());
     const existing = (state.checkins || []).find(function (c) { return c.date === today; }) || null;
+    const row = {
+      mood: Number(data.mood),
+      craving: Number(data.craving) || 0,
+      note: note,
+      energy: data.energy != null && data.energy !== "" ? Number(data.energy) : null,
+      stress: data.stress != null && data.stress !== "" ? Number(data.stress) : null,
+      sleepHours: data.sleepHours != null && data.sleepHours !== "" ? Number(data.sleepHours) : null,
+      sleepQuality: data.sleepQuality || "",
+      caffeine: data.caffeine != null && data.caffeine !== "" ? Number(data.caffeine) : null,
+      exercise: data.exercise || ""
+    };
     if (existing) {
-      existing.mood = Number(data.mood);
-      existing.craving = Number(data.craving) || 0;
-      existing.note = note;
+      Object.assign(existing, row);
     } else {
-      state.checkins.push({
-        id: uid(),
-        date: today,
-        mood: Number(data.mood),
-        craving: Number(data.craving) || 0,
-        note: note
+      state.checkins.push(Object.assign({ id: uid(), date: today }, row));
+    }
+    if (row.sleepHours != null) {
+      state.sleepLog = state.sleepLog || {};
+      state.sleepLog[today] = Object.assign({}, state.sleepLog[today] || {}, {
+        hours: row.sleepHours,
+        quality: row.sleepQuality,
+        at: new Date().toISOString()
       });
     }
+    awardXp(5, "checkin", "ci:" + today);
     save();
     checkAchievements(false);
     closeModal();
@@ -5767,7 +7308,7 @@
       morePage = null;
       render();
     },
-    sos: () => { closeModal(); closeToolScreen(); closePartyScreen(); startWave(); },
+    sos: () => { closeModal(); closeToolScreen(); closePartyScreen(); startCalmIntake(); },
     "sos-tips": () => {
       const s = readSos();
       openTips();
@@ -5842,7 +7383,7 @@
     "reset-all": () => resetAll(),
     "ob-next": () => {
       pullOnboardingForm();
-      obStep = Math.min(5, obStep + 1);
+      obStep = Math.min(6, obStep + 1);
       renderOnboarding();
     },
     "ob-back": () => {
@@ -5907,6 +7448,12 @@
       } else if (group === "crave") {
         root._ci = root._ci || {};
         root._ci.craving = Number(val);
+      } else if (group === "energy" || group === "stress" || group === "sleepHours" || group === "caffeine") {
+        root._ci = root._ci || {};
+        root._ci[group] = Number(val);
+      } else if (group === "sleepQuality" || group === "exercise") {
+        root._ci = root._ci || {};
+        root._ci[group] = val;
       } else if (group === "intensityAfter") {
         root._sos = root._sos || {};
         root._sos.intensityAfter = Number(val);
@@ -6143,6 +7690,7 @@
       closeToolScreen();
       state.activeDelay = null;
       save();
+      if (afterIntervention("delay")) return;
       askHelped("delay");
     },
     "ground-next": () => { if (window._groundPaint) window._groundPaint(true); },
@@ -6152,6 +7700,122 @@
       toast(el.dataset.val === "yes" ? "Gemt. Vi husker, hvad der hjalp." : "Gemt.");
       if (view === "craving") render();
     },
+    "calm-int": (el) => { setCalmInt(el.dataset.val); },
+    "calm-feel": (el) => { setCalmFeel(el.dataset.val); },
+    "calm-intake-skip": () => {
+      const ses = calmSession || { fromSos: true, intensity: 0, feeling: "unknown" };
+      ses.feeling = ses.feeling || "unknown";
+      startWave({ sos: sessionToSos(ses), fromCalm: true });
+    },
+    "calm-after": (el) => {
+      const n = Number(el.dataset.val) || 0;
+      const screen = $("#wave-screen");
+      if (screen) {
+        screen._sos = screen._sos || {};
+        screen._sos.intensityAfter = n;
+        $$(".calm-int", screen).forEach(function (b) {
+          b.classList.toggle("on", Number(b.dataset.val) === n);
+        });
+      }
+      if (calmSession) calmSession.intensityAfter = n;
+    },
+    "calm-helped": (el) => {
+      recordToolHelp(el.dataset.id, el.dataset.val);
+      const parent = el.parentElement;
+      if (parent) $$("button", parent).forEach(function (b) { b.classList.toggle("on", b === el); });
+    },
+    "follow-yes": () => {
+      const screen = $("#wave-screen");
+      const id = screen && screen._cravingId;
+      const sos = (screen && screen._sos) || sessionToSos(calmSession) || {};
+      scheduleFollowup({
+        cravingId: id,
+        intensity: sos.intensityAfter != null ? sos.intensityAfter : sos.intensity,
+        intensityAfter: sos.intensityAfter,
+        feeling: sos.feeling || (calmSession && calmSession.feeling) || ""
+      });
+      closeWave();
+      calmSession = null;
+      toast("Jeg spørger igen om fem minutter — kun mens appen er åben.");
+      render();
+    },
+    "follow-no": () => {
+      closeWave();
+      calmSession = null;
+      toast("Logget. Godt klaret.");
+      render();
+    },
+    "follow-cancel": () => {
+      cancelFollowup();
+      const b = $("#follow-banner");
+      if (b) b.remove();
+      toast("Aflyst.");
+    },
+    "follow-int": (el) => {
+      const root = $("#modal-root");
+      root._follow = root._follow || {};
+      root._follow.intensity = Number(el.dataset.val) || 0;
+      const parent = el.parentElement;
+      if (parent) $$(".calm-int", parent).forEach(function (b) {
+        b.classList.toggle("on", b === el);
+      });
+    },
+    "follow-ok": (el) => { saveFollowup(el.dataset.kind); },
+    "follow-dismiss": () => { cancelFollowup(); closeModal(); followupOpen = false; },
+    "goto-assistant": () => { closeModal(); view = "more"; morePage = "assistant"; render(); },
+    "goto-stats": () => { closeModal(); view = "more"; morePage = "stats"; render(); },
+    "goto-dep": () => { closeModal(); view = "more"; morePage = "dep"; render(); },
+    "stats-range": (el) => {
+      statsRange = Number(el.dataset.val) || 30;
+      if (morePage === "stats") renderStats($("#view-more"));
+    },
+    "assist-toggle": (el) => {
+      const page = $("#view-more");
+      const id = el.dataset.id;
+      if (page) page._openId = page._openId === id ? "" : id;
+      if (morePage === "assistant") renderAssistant(page);
+    },
+    "dep-first": (el) => {
+      const store = depActionStore();
+      store.firstUse = el.dataset.val;
+      const parent = el.parentElement;
+      if (parent) $$("button", parent).forEach(function (b) { b.classList.toggle("on", b === el); });
+    },
+    "dep-attempts": (el) => {
+      const store = depActionStore();
+      store.attempts = el.dataset.val;
+      const parent = el.parentElement;
+      if (parent) $$("button", parent).forEach(function (b) { b.classList.toggle("on", b === el); });
+    },
+    "dep-sit": (el) => {
+      const store = depActionStore();
+      store.situations = store.situations || [];
+      const id = el.dataset.val;
+      const i = store.situations.indexOf(id);
+      if (i >= 0) store.situations.splice(i, 1);
+      else store.situations.push(id);
+      el.classList.toggle("on", store.situations.indexOf(id) >= 0);
+    },
+    "dep-save": () => {
+      saveDepFromForm();
+      closeModal();
+      render();
+      toast("Profil gemt.");
+    },
+    "dep-skip": () => {
+      if (!state.onboarded) {
+        pullOnboardingForm();
+        obStep = Math.min(6, obStep + 1);
+        renderOnboarding();
+        return;
+      }
+      state.profile = state.profile || defaultProfile();
+      state.profile.dep = Object.assign(defaultDep(), state.profile.dep || {}, { skipped: true });
+      save();
+      closeModal();
+      render();
+    },
+    "dep-edit": () => openDepForm(),
     "goto-compass": () => { view = "health"; morePage = null; closePartyScreen(); render(); },
     "goto-plans": () => { view = "more"; morePage = "plans"; closeModal(); closePartyScreen(); render(); },
     "goto-party": () => { view = "more"; morePage = "party"; closeModal(); render(); },
@@ -6704,6 +8368,41 @@
       if (dayCount >= c.days) state.celebrated[c.id] = new Date(quitAt.getTime() + c.days * 86400000).toISOString();
     });
     if (opts.theme) applyTheme();
+    state.profile.dep = {
+      firstUse: "5",
+      yearsUse: 8,
+      attempts: "2",
+      situations: ["work", "alcohol", "afterfood", "stress"],
+      filledAt: quitAt.toISOString(),
+      skipped: false
+    };
+    state.checkins = (state.checkins || []).map(function (c, idx) {
+      const short = idx % 3 === 0;
+      return Object.assign({}, c, {
+        energy: short ? 2 : 4,
+        stress: short ? 4 : 2,
+        sleepHours: short ? 5 : 7 + (idx % 2),
+        sleepQuality: short ? "bad" : "good",
+        caffeine: short ? 3 : 1,
+        exercise: short ? "none" : "some",
+        craving: short ? 4 : (c.craving || 1)
+      });
+    });
+    (state.checkins || []).forEach(function (c) {
+      if (c.sleepHours != null) {
+        state.sleepLog = state.sleepLog || {};
+        state.sleepLog[c.date] = { hours: c.sleepHours, quality: c.sleepQuality, at: c.date + "T07:00:00" };
+      }
+    });
+    (state.cravings || []).forEach(function (c, i) {
+      c.intensityAfter = Math.max(1, (Number(c.intensity) || 5) - 2);
+      c.feeling = FEELINGS[i % FEELINGS.length].id;
+      c.toolUsed = (c.usedWave ? "wave" : c.usedBreathing ? "breath" : "ground");
+    });
+    state.xp = 0;
+    state.xpAwarded = {};
+    state.xpBackfilled = false;
+    backfillXp(state);
     state.lastBackupAt = new Date(now).toISOString();
     state.backupRemindedAt = state.lastBackupAt;
     save();
@@ -6748,6 +8447,8 @@
     if (params.get("fast") === "1") {
       WAVE_MS = 4000;
       DELAY_MS = 5000;
+      FOLLOWUP_MS = 4000;
+      FOLLOWUP_GRACE = 20000;
     }
     const demo = params.get("demo");
     if (demo === "1") {
@@ -6842,6 +8543,20 @@
     showCalmOutcome: showCalmOutcome,
     finishCalm: finishCalm,
     backupDue: backupDue,
+    startCalmIntake: startCalmIntake,
+    pickIntervention: pickIntervention,
+    launchIntervention: launchIntervention,
+    showFollowupOffer: showFollowupOffer,
+    scheduleFollowup: scheduleFollowup,
+    showFollowupSheet: showFollowupSheet,
+    awardXp: awardXp,
+    xpInfo: xpInfo,
+    backfillXp: backfillXp,
+    lifestyleInsights: lifestyleInsights,
+    statsSeries: statsSeries,
+    depIsFilled: depIsFilled,
+    assistantItems: assistantItems,
+    FOLLOWUP_MS: function (ms) { if (ms != null) FOLLOWUP_MS = ms; return FOLLOWUP_MS; },
     personalInsights: personalInsights,
     moneyConcrete: moneyConcrete,
     applyTheme: applyTheme,
