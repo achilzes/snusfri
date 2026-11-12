@@ -20,6 +20,7 @@
     "Kørsel",
     "Arbejde",
     "Ferie",
+    "Gaming",
     "Andet"
   ];
 
@@ -82,6 +83,12 @@
       body: "Kredsløbet arbejder uden konstant nikotin. For mange kommer trangen sjældnere og føles svagere."
     },
     {
+      id: "d28",
+      after: 28 * 86400,
+      title: "28 dage",
+      body: "28 dage uden røg femdobler ifølge Helsenorge chancen for at holde op for godt — den samme dokumentation findes ikke for snus. Tag det som et delmål, ikke som et bevist snus-tal."
+    },
+    {
       id: "1mo",
       after: 30 * 86400,
       title: "1 måned",
@@ -103,7 +110,7 @@
       id: "1y",
       after: 365 * 86400,
       title: "1 år",
-      body: "Et helt år. En stor sejr for helbred, økonomi og frihed. Du har vist, at det kan lade sig gøre."
+      body: "Et helt år uden snus. Historikken står. Det er et langt stykke arbejde — fortsæt som du har gjort."
     }
   ];
 
@@ -219,7 +226,8 @@
       lead: "Stoplinien: trangen er markant mindre. Triggersituationer — fest, ferie, bestemte mennesker — kan stadig vække den.",
       symptoms: [
         { name: "Sjældnere bølger", tip: "Når de kommer, er de stadig 3–4 minutter. Du har redet dem før." },
-        { name: "Første fest eller ferie", tip: "Sjældne cues holder længe. Lav en fest-plan, mens du er ædru, ligesom første gang." }
+        { name: "Første fest eller ferie", tip: "Sjældne cues holder længe. Lav en fest-plan, mens du er ædru, ligesom første gang." },
+        { name: "Mund og tandkød", tip: "Stoplinien: snus kan få tandkødet til at trække sig tilbage. Tandlægeforeningen (2024), citeret af Stoplinien: over halvdelen af tandlægerne har oplevet flere patienter med skader fra snus, især blandt unge. En pause giver slimhinderne ro." }
       ],
       honest: "«Hvornår føles jeg normal?» har ikke ét svar. En havde tågen væk efter 2 uger; en anden først tydelig bedring efter 90 dage.",
       peak: false
@@ -233,7 +241,8 @@
       lead: "Triggersituationer kan stadig vække den. Det er ofte hukommelse og vane, ikke behov. Tilbagefald efter lang tid sker, ofte til fest.",
       symptoms: [
         { name: "Fest og alkohol", tip: "Den hyppigste fælde, også langt henne. Planen laves ædru. «Bjudsnus» tæller." },
-        { name: "«Bare én»", tip: "Kickene fra den første fase er væk. Du tager den for at føle dig normal — og så er du fast igen." }
+        { name: "«Bare én»", tip: "Kickene fra den første fase er væk. Du tager den for at føle dig normal — og så er du fast igen." },
+        { name: "Mund og tandkød", tip: "Stoplinien: snus kan få tandkødet til at trække sig tilbage. Tandkød og slimhinder får en pause — det er en af de ting, mange først mærker efter måneder." }
       ],
       honest: "Den værste del er for de fleste overstået, men det kræver stadig opmærksomhed.",
       peak: false
@@ -265,6 +274,7 @@
     { trigger: "Arbejde", ifText: "Hvis jeg skal koncentrere mig og savner posen", thenText: "så tager jeg en pause med vand eller en kort gåtur." },
     { trigger: "Socialt", ifText: "Hvis andre tager snus omkring mig", thenText: "så siger jeg nej tak, og skifter emne." },
     { trigger: "Ferie", ifText: "Hvis jeg er på ferie og gamle vaner banker på", thenText: "så kigger jeg på mine grunde og tager en gåtur." },
+    { trigger: "Gaming", ifText: "Hvis jeg spiller og hænderne søger en pose", thenText: "så sætter jeg et glas vand ved siden af og rider bølgen, hvis suget kommer." },
     { trigger: "Andet", ifText: "Hvis suget kommer uventet", thenText: "så drikker jeg et glas koldt vand og rider bølgen." }
   ];
 
@@ -277,10 +287,13 @@
   ];
 
   const INBOX_TEMPLATES = [
-    { id: "h6", fromH: 4, toH: 20, title: "De første timer", body: "Trang og uro kan starte nu. Det er forventeligt. Den værste bølge varer oftest 3–4 minutter — rid den, hvis den kommer." },
-    { id: "d2", fromH: 24, toH: 48, title: "Dag 2 — toppen for de fleste", body: "For de fleste er det her toppen. Irritabilitet, søvn og tåge er almindeligt og midlertidigt. Det er ikke et tegn på at du fejler." },
-    { id: "d3", fromH: 48, toH: 72, title: "Dag 3", body: "Nikotinen er næsten ude af kroppen. Trangen kan være intens — og den går over. Du behøver ikke vinde resten af livet, bare den her bølge." },
-    { id: "d4", fromH: 72, toH: 120, title: "De første 72 timer er gået", body: "Kroppen begynder at tilpasse sig. Søvnen kan stadig være urolig et stykke tid endnu. Det letter ofte efter 1–2 uger." },
+    { id: "h6", fromH: 4, toH: 12, title: "De første timer", body: "Trang og uro kan starte nu. Det er forventeligt. Den værste bølge varer oftest 3–4 minutter — rid den, hvis den kommer." },
+    { id: "h12", fromH: 12, toH: 22, title: "Cirka et halvt døgn", body: "Trangen kommer i bølger. Hver bølge går over. Dine grunde og din plan ligger klar, hvis du har brug for dem." },
+    { id: "d2", fromH: 22, toH: 36, title: "Dag 2 — toppen for de fleste", body: "For de fleste er det her toppen. Irritabilitet, søvn og tåge er almindeligt og midlertidigt. Det er ikke et tegn på at du fejler." },
+    { id: "d2eve", fromH: 36, toH: 48, title: "Aften på dag 2", body: "Hvis det føles værst nu, er det forventeligt. Rid bølgen. Du behøver ikke vinde resten af livet — bare den her." },
+    { id: "d3", fromH: 48, toH: 64, title: "Dag 3", body: "Nikotinen er næsten ude af kroppen. Trangen kan være intens — og den går over. Du behøver ikke vinde resten af livet, bare den her bølge." },
+    { id: "d3eve", fromH: 64, toH: 80, title: "Dag 3 er ved at være omme", body: "Nikotinen er næsten ude. Vanerne bliver. Dine hvis-så-planer er lavet til dem." },
+    { id: "d4", fromH: 80, toH: 130, title: "De første 72 timer er gået", body: "Kroppen begynder at tilpasse sig. Søvnen kan stadig være urolig et stykke tid endnu. Det letter ofte efter 1–2 uger." },
     { id: "w1", fromH: 144, toH: 192, title: "Cirka en uge", body: "De fysiske abstinenser aftager som regel. Vanerne bliver tilbage. Dine hvis-så-planer er lavet til dem." },
     { id: "d28", fromH: 27 * 24, toH: 30 * 24, title: "28 dage", body: "28 dage uden røg femdobler ifølge Helsenorge chancen for at holde op for godt — den samme dokumentation findes ikke for snus. Tag det som et delmål, ikke som et bevist snus-tal." },
     { id: "weekend", weekend: true, fromH: 0, toH: 2160, title: "Weekenden nærmer sig", body: "Fest og alkohol er den hyppigste fælde. Hvis du skal ud, så kig på planen, du lavede, mens du var ædru." }
@@ -311,16 +324,18 @@
   const nf2 = new Intl.NumberFormat("da-DK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   function fmtNum(n, d) {
-    const x = Number(n) || 0;
+    const x = isFinite(Number(n)) ? Number(n) : 0;
     if (d === 1) return nf1.format(x);
     if (d === 2) return nf2.format(x);
     return nf0.format(Math.round(x));
   }
   function fmtKr(n, d) {
-    return (d === 0 ? nf0.format(n) : nf2.format(n)) + " kr";
+    const x = isFinite(Number(n)) ? Number(n) : 0;
+    return (d === 0 ? nf0.format(x) : nf2.format(x)) + " kr";
   }
   function moneyParts(n) {
-    const rounded = Math.round((Number(n) || 0) * 100) / 100;
+    const raw = isFinite(Number(n)) ? Number(n) : 0;
+    const rounded = Math.round(raw * 100) / 100;
     const sign = rounded < 0 ? "−" : "";
     const abs = Math.abs(rounded);
     const [int, dec] = abs.toFixed(2).split(".");
@@ -426,7 +441,7 @@
   }
   function defaultState() {
     return {
-      v: 2,
+      v: 3,
       onboarded: false,
       profile: defaultProfile(),
       taper: {
@@ -465,7 +480,8 @@
       buddy: { name: "", phone: "", note: "" },
       notifyPrefs: { enabled: false, earlyIntense: true, times: [] },
       dayLog: {},
-      sleepLog: {}
+      sleepLog: {},
+      weightLog: {}
     };
   }
 
@@ -538,6 +554,7 @@
     }
     if (!s.dayLog || typeof s.dayLog !== "object") s.dayLog = {};
     if (!s.sleepLog || typeof s.sleepLog !== "object") s.sleepLog = {};
+    if (!s.weightLog || typeof s.weightLog !== "object") s.weightLog = {};
     if (s.taper) {
       if (!s.taper.stopDate) s.taper.stopDate = s.taper.stopDate || null;
       if (s.taper.strengthMg == null) s.taper.strengthMg = (s.profile && s.profile.nicotineMg) || 0;
@@ -549,7 +566,7 @@
     }
     if (!s.profile.leftovers) s.profile.leftovers = s.profile.leftovers || "";
     if (!s.profile.alcoholFirstWeeks) s.profile.alcoholFirstWeeks = s.profile.alcoholFirstWeeks || "";
-    s.v = Math.max(Number(s.v) || 1, 2);
+    s.v = Math.max(Number(s.v) || 1, 3);
     return s;
   }
 
@@ -624,7 +641,8 @@
   function stats(now) {
     now = now || Date.now();
     const r = rates();
-    const quitAt = state.profile.quitAt ? new Date(state.profile.quitAt).getTime() : now;
+    const parsed = state.profile && state.profile.quitAt ? new Date(state.profile.quitAt).getTime() : NaN;
+    const quitAt = isFinite(parsed) ? parsed : now;
     const rawMs = now - quitAt;
     const ms = Math.max(0, rawMs);
     const days = ms / 86400000;
@@ -736,7 +754,7 @@
     const startP = Math.max(0, Number(t.startPouches) || 0);
     const endP = Math.max(0, Number(t.targetPouches) || 0);
     const totalDays = weeks * 7;
-    const day = Math.floor((startOfDay(date || new Date()) - startOfDay(start)) / 86400000);
+    const day = calendarDaysBetween(start, date || new Date());
     if (day < 0) return { allow: startP, day: day, totalDays: totalDays, done: false };
     if (day >= totalDays) return { allow: endP, day: day, totalDays: totalDays, done: true };
     const raw = startP + (endP - startP) * (day / totalDays);
@@ -748,7 +766,26 @@
   /* ---------------- v8 helpers ---------------- */
   function compassPhase(now) {
     const s = stats(now);
-    const hours = s.future ? 0 : s.ms / 3600000;
+    if (s.future) {
+      return {
+        phase: {
+          id: "prep",
+          fromH: 0,
+          toH: 0,
+          kicker: "Før start",
+          title: "De første 72 timer topper dag 2–3",
+          lead: "Trang, uro og dårlig søvn kan starte inden for få timer. For de fleste er det værst dag 2–3. Det er midlertidigt, og det er normalt.",
+          symptoms: [],
+          honest: "Lav planen nu — før suget kommer. Dag 2 skal ikke komme som et chok.",
+          peak: false
+        },
+        hours: 0,
+        days: 0,
+        s: s,
+        future: true
+      };
+    }
+    const hours = s.ms / 3600000;
     let phase = COMPASS[0];
     for (let i = 0; i < COMPASS.length; i++) {
       if (hours >= COMPASS[i].fromH && hours < COMPASS[i].toH) {
@@ -757,7 +794,7 @@
       }
       if (hours >= COMPASS[i].fromH) phase = COMPASS[i];
     }
-    return { phase: phase, hours: hours, days: s.days, s: s };
+    return { phase: phase, hours: hours, days: s.days, s: s, future: false };
   }
 
   function reasonsList() {
@@ -884,7 +921,38 @@
         added = true;
       }
     });
-    if (added) save();
+    const times = (state.notifyPrefs && state.notifyPrefs.times) || [];
+    const nowT = new Date();
+    times.forEach(function (tm) {
+      const key = "time-" + todayISO(nowT) + "-" + tm;
+      if (state.inboxSeen[key]) return;
+      if (!timeIsNear(tm, nowT, 30)) return;
+      if (hours < 2) return;
+      const st = stats();
+      const sp = splitTime(st.ms);
+      state.inbox.push({
+        id: uid(),
+        templateId: key,
+        at: nowT.toISOString(),
+        title: "Dit tidspunkt · " + tm,
+        body:
+          "Det er omkring " +
+          tm +
+          " — et af dine egne tidspunkter. Du er på dag " +
+          sp.days +
+          " og har sparet " +
+          fmtKr(st.money, 0) +
+          ". Hvis suget kommer, ligger planen klar.",
+        read: false
+      });
+      state.inboxSeen[key] = true;
+      added = true;
+    });
+    if (added) {
+      save();
+      const latest = state.inbox[state.inbox.length - 1];
+      maybeNotify(latest);
+    }
   }
 
   function unreadInbox() {
@@ -951,12 +1019,17 @@
     const mid = '<span class="pill' + (ph.peak ? " coral" : "") + '">Dette er normalt</span>';
     const symptoms = (ph.symptoms || [])
       .map(function (sy) {
+        const wantWave = /trang|bølge|sug/i.test(sy.name);
         return (
           '<div class="sym"><div class="dot"></div><div><strong>' +
           esc(sy.name) +
           "</strong><p>" +
           esc(sy.tip) +
-          "</p></div></div>"
+          "</p>" +
+          (wantWave
+            ? '<button type="button" class="linkish" data-act="start-wave">Rid bølgen</button>'
+            : "") +
+          "</div></div>"
         );
       })
       .join("");
@@ -990,7 +1063,8 @@
       esc(ph.honest) +
       "</div>" +
       (full
-        ? '<div class="normal-range"><strong>Hvornår føles jeg normal?</strong><p class="compass-lead">Der er ikke ét svar. De fleste kerne-symptomer letter over 2–4 uger. Nogle er klarere efter 2 uger, nogle først efter 2–3 måneder. Variationen er reel — appen lover ikke en finishlinje på en bestemt dag.</p></div>' +
+        ? compassDayStripHtml(info) +
+          '<div class="normal-range"><strong>Hvornår føles jeg normal?</strong><p class="compass-lead">Der er ikke ét svar. De fleste kerne-symptomer letter over 2–4 uger. Nogle er klarere efter 2 uger, nogle først efter 2–3 måneder. Variationen er reel — appen lover ikke en finishlinje på en bestemt dag.</p></div>' +
           '<p class="fine-src">Kilder: Stoplinien, Helsenorge og Cleveland Clinic, med forbehold fra brugerforløb. Alle reagerer forskelligt. Det her er ikke medicinsk rådgivning. Ved alvorlig nedtrykthed, tal med en læge.</p>'
         : "") +
       actions +
@@ -1047,6 +1121,9 @@
 
   /* ---------------- toasts & modals ---------------- */
   function toast(msg, kind) {
+    if (kind === "warn") haptic("warn");
+    else if (kind === "gold") haptic("done");
+    else haptic("ok");
     const root = $("#toast-root");
     if (!root) return;
     const el = document.createElement("div");
@@ -1577,12 +1654,524 @@
     return { m: null, prev: MILESTONES[MILESTONES.length - 1].after };
   }
 
+  /* ---------------- v9 helpers ---------------- */
+  let homeMoneyOpen = false;
+  let compassPeekDay = null;
+
+  function finiteNum(n, fallback) {
+    const x = Number(n);
+    return isFinite(x) ? x : (fallback == null ? 0 : fallback);
+  }
+
+  function calendarDaysBetween(a, b) {
+    const a0 = startOfDay(a);
+    const b0 = startOfDay(b);
+    const aUTC = Date.UTC(a0.getFullYear(), a0.getMonth(), a0.getDate());
+    const bUTC = Date.UTC(b0.getFullYear(), b0.getMonth(), b0.getDate());
+    return Math.round((bUTC - aUTC) / 86400000);
+  }
+
+  function haptic(kind) {
+    try {
+      if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (!navigator.vibrate) return;
+      if (kind === "start") navigator.vibrate([8, 30, 12]);
+      else if (kind === "done") navigator.vibrate([16, 40, 24]);
+      else if (kind === "warn") navigator.vibrate([24, 40, 24]);
+      else navigator.vibrate(12);
+    } catch (e) {}
+  }
+
+  function afterPaint(fn) {
+    if (typeof requestIdleCallback === "function") requestIdleCallback(fn, { timeout: 900 });
+    else setTimeout(fn, 0);
+  }
+
+  function hideBoot() {
+    const b = document.getElementById("boot");
+    if (!b) return;
+    b.classList.add("off");
+    setTimeout(function () {
+      if (b && b.parentNode) b.parentNode.removeChild(b);
+    }, 320);
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        toast("Kopieret.");
+        haptic("ok");
+      }).catch(function () {
+        toast(text);
+      });
+    } else {
+      toast("Kopiér: " + text);
+    }
+  }
+
+  function shareStatus(opts) {
+    opts = opts || {};
+    const s = stats();
+    const t = splitTime(s.ms);
+    const days = t.days + " " + plural(t.days, "dag", "dage");
+    let text;
+    if (s.future) {
+      text = "Jeg stopper med snus " + fmtDate(state.profile.quitAt) + ".";
+    } else if (opts.buddy) {
+      const name = (state.buddy && state.buddy.name) || "";
+      text =
+        (name ? "Hej " + name + ". " : "") +
+        (opts.party
+          ? "Jeg er til fest i aften og er snusfri i " + days + ". Skriv til mig senere, ok?"
+          : "Jeg er snusfri i " + days + " og har sparet " + fmtKr(s.money, 0) + ". Skriv gerne, hvis jeg har brug for det.");
+    } else {
+      text = "Snusfri i " + days + " · " + fmtKr(s.money, 0) + " sparet.";
+    }
+    if (navigator.share) {
+      navigator.share({ title: "Snusfri", text: text }).catch(function () {
+        copyText(text);
+      });
+    } else {
+      copyText(text);
+    }
+  }
+
+  function timeIsNear(hhmm, now, windowMin) {
+    const m = String(hhmm).match(/^(\d{1,2})\s*[.:]\s*(\d{2})$/);
+    if (!m) return false;
+    const h = Number(m[1]);
+    const min = Number(m[2]);
+    if (h > 23 || min > 59) return false;
+    const target = h * 60 + min;
+    const cur = now.getHours() * 60 + now.getMinutes();
+    let d = Math.abs(cur - target);
+    if (d > 12 * 60) d = 24 * 60 - d;
+    return d <= (windowMin == null ? 30 : windowMin);
+  }
+
+  function maybeNotify(msg) {
+    try {
+      if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+      const s = stats();
+      const t = splitTime(s.ms);
+      const title =
+        "Snusfri · " +
+        t.days +
+        " " +
+        plural(t.days, "dag", "dage") +
+        " · " +
+        fmtKr(s.money, 0);
+      const body = (msg && (msg.title + (msg.body ? " — " + msg.body : ""))) || title;
+      const opts = {
+        body: body,
+        tag: "snusfri-" + ((msg && (msg.templateId || msg.id)) || "now"),
+        icon: "icons/apple-touch-icon.png",
+        lang: "da"
+      };
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready
+          .then(function (reg) {
+            if (reg && reg.showNotification) return reg.showNotification(title, opts);
+            return new Notification(title, opts);
+          })
+          .catch(function () {
+            try { new Notification(title, opts); } catch (e2) {}
+          });
+      } else {
+        new Notification(title, opts);
+      }
+    } catch (e) {}
+  }
+
+  function nowHelpHtml() {
+    return (
+      '<div class="now-help" role="group" aria-label="Hvad hjælper nu">' +
+        '<button type="button" class="now-act" data-act="start-wave" aria-label="Rid bølgen, tre til fire minutter">' +
+          '<span class="now-lab">Rid bølgen</span>' +
+          '<span class="now-sub">3–4 min.</span>' +
+        "</button>" +
+        '<button type="button" class="now-act" data-act="bare-en" aria-label="Bare én pose? Et roligt værn">' +
+          '<span class="now-lab">Bare én pose?</span>' +
+          '<span class="now-sub">Hold linjen her</span>' +
+        "</button>" +
+        '<button type="button" class="now-act sos" data-act="sos" aria-label="Trangs-SOS">' +
+          '<span class="now-lab">Trang nu</span>' +
+          '<span class="now-sub">SOS</span>' +
+        "</button>" +
+      "</div>"
+    );
+  }
+
+  function moneyCompactHtml(s) {
+    const parts = moneyParts(s.money);
+    const digits = String(parts.int).replace(/\./g, "").length;
+    const big = digits >= 7 ? " huge" : digits >= 5 ? " big" : "";
+    return (
+      '<div class="card money-compact reveal">' +
+        '<button type="button" class="money-hit" data-act="toggle-money" aria-expanded="' +
+        (homeMoneyOpen ? "true" : "false") +
+        '" aria-label="Penge sparet, ' +
+        esc(parts.sign + parts.int + "," + parts.dec + " kroner") +
+        ". " +
+        (homeMoneyOpen ? "Skjul detaljer" : "Vis detaljer") +
+        '">' +
+        '<div class="card-kicker gold">Penge sparet</div>' +
+        '<div class="money-row' +
+        big +
+        '">' +
+        '<span class="money-int" id="money-int">' +
+        parts.sign +
+        parts.int +
+        '</span><span class="money-dec" id="money-dec">,' +
+        parts.dec +
+        '</span><span class="money-cur">kr</span>' +
+        '<span class="money-chev" aria-hidden="true">' +
+        (homeMoneyOpen ? "▴" : "▾") +
+        "</span></div>" +
+        '<div class="money-brief" id="money-brief">' +
+        esc(fmtPouches(s.pouches)) +
+        " " +
+        plural(Math.floor(finiteNum(s.pouches)), "pose", "poser") +
+        " · " +
+        esc(fmtNic(s.nicotine)) +
+        "</div></button>" +
+        (homeMoneyOpen
+          ? '<div class="money-details" id="money-details">' +
+            '<div class="mini-stats">' +
+            '<div class="mini-stat gold"><div class="v">' +
+            esc(fmtKr(s.per.year, 0)) +
+            '</div><div class="l">På et år</div></div>' +
+            '<div class="mini-stat mint"><div class="v">' +
+            esc(fmtNum(Math.floor(finiteNum(s.cans)), 0)) +
+            '</div><div class="l">' +
+            plural(Math.floor(finiteNum(s.cans)), "dåse undgået", "dåser undgået") +
+            "</div></div></div>" +
+            '<div class="period-grid">' +
+            periodCell(s.per.day, "pr. dag") +
+            periodCell(s.per.week, "pr. uge") +
+            periodCell(s.per.month, "pr. måned") +
+            periodCell(s.per.year, "pr. år") +
+            "</div>" +
+            '<div class="mini-stats" style="margin-top:0.7rem">' +
+            '<div class="mini-stat"><div class="v">' +
+            esc(fmtPouches(s.pouches)) +
+            '</div><div class="l">poser undgået</div></div>' +
+            '<div class="mini-stat sky"><div class="v">' +
+            esc(fmtNic(s.nicotine)) +
+            '</div><div class="l">nikotin undgået</div></div>' +
+            '<div class="mini-stat lav" style="grid-column:1/-1"><div class="v">' +
+            esc(fmtTimeWon(s.minutes)) +
+            '</div><div class="l">tid vundet · anslået 5 min. pr. pose</div></div>' +
+            "</div></div>"
+          : "") +
+        "</div>"
+    );
+  }
+
+  function phaseForHours(hours) {
+    let phase = COMPASS[0];
+    for (let i = 0; i < COMPASS.length; i++) {
+      if (hours >= COMPASS[i].fromH && hours < COMPASS[i].toH) {
+        phase = COMPASS[i];
+        break;
+      }
+      if (hours >= COMPASS[i].fromH) phase = COMPASS[i];
+    }
+    return phase;
+  }
+
+  function compassHomeHtml(info) {
+    if (info.future) {
+      return (
+        '<div class="card compass-card reveal">' +
+        '<div class="card-kicker gold">Før du starter</div>' +
+        "<h3>De første 72 timer topper dag 2–3</h3>" +
+        '<div class="honest-note mint">Det er midlertidigt, og det er normalt. Lav planen nu — før suget kommer.</div>' +
+        '<div class="compass-actions">' +
+        '<button type="button" class="btn btn-ghost-mint btn-sm" data-act="goto-compass">Se forløbet</button>' +
+        '<button type="button" class="btn btn-ghost-mint btn-sm" data-act="goto-plans">Hvis-så-planer</button>' +
+        "</div></div>"
+      );
+    }
+    const ph = info.phase;
+    return (
+      '<div class="card compass-card reveal' +
+      (ph.peak ? " peak" : "") +
+      '"><div class="card-kicker' +
+      (ph.peak ? " coral" : " gold") +
+      '">' +
+      esc(ph.kicker) +
+      ' · <span class="pill' +
+      (ph.peak ? " coral" : "") +
+      '">Dette er normalt</span></div><h3>' +
+      esc(ph.title) +
+      '</h3><div class="honest-note' +
+      (ph.peak ? "" : " mint") +
+      '">' +
+      esc(ph.honest) +
+      '</div><div class="compass-actions">' +
+      (ph.peak || info.hours < 168
+        ? '<button type="button" class="btn btn-coral btn-sm" data-act="start-wave">Rid bølgen</button>'
+        : "") +
+      '<button type="button" class="btn btn-ghost-mint btn-sm" data-act="goto-compass">Hele forløbet</button>' +
+      "</div></div>"
+    );
+  }
+
+  function day28Html(s, opts) {
+    opts = opts || {};
+    if (!s || s.future) return "";
+    if (s.days < 21 || s.days >= 36) return "";
+    if (!opts.force && state.dismissed && state.dismissed.d28 && !opts.health) return "";
+    const reached = s.days >= 28;
+    const left = 28 - s.days;
+    return (
+      '<div class="card goal28 reveal">' +
+      '<div class="card-kicker' +
+      (reached ? " mint" : " gold") +
+      '">28 dage' +
+      (reached ? " · delmål" : "") +
+      "</div><strong>" +
+      (reached
+        ? "Du har været snusfri i 28 dage."
+        : "28 dage om " + (left < 1 ? "under et døgn" : fmtEta(left * 86400))) +
+      "</strong><p>28 dage uden røg femdobler ifølge Helsenorge chancen for at holde op for godt — den samme dokumentation findes ikke for snus. Tag det som et delmål, ikke som et bevist snus-tal.</p>" +
+      (opts.health
+        ? ""
+        : '<button type="button" class="btn btn-ghost btn-sm mt" data-act="dismiss-d28">Luk</button>') +
+      "</div>"
+    );
+  }
+
+  function compassDayStripHtml(info) {
+    if (!info || info.future) return "";
+    const current = Math.max(1, Math.min(14, Math.ceil(info.hours / 24) || 1));
+    const past14 = info.hours >= 14 * 24;
+    const peek = compassPeekDay || (past14 ? 14 : current);
+    let cells = "";
+    for (let i = 1; i <= 14; i++) {
+      const peak = i === 2 || i === 3;
+      const cls = [
+        i === peek ? "on" : "",
+        i <= current || past14 ? "past" : "",
+        peak ? "peak" : "",
+        i === current && !past14 ? "today" : ""
+      ]
+        .filter(Boolean)
+        .join(" ");
+      cells +=
+        '<button type="button" class="cday ' +
+        cls +
+        '" data-act="compass-day" data-day="' +
+        i +
+        '" aria-pressed="' +
+        (i === peek) +
+        '" aria-current="' +
+        (i === current && !past14 ? "true" : "false") +
+        '" aria-label="Dag ' +
+        i +
+        (peak ? ", toppen for de fleste" : "") +
+        (i === current && !past14 ? ", i dag" : "") +
+        '">' +
+        i +
+        "</button>";
+    }
+    const hoursForPeek = (peek - 0.45) * 24;
+    const ph = phaseForHours(Math.max(0, hoursForPeek));
+    const peekNote =
+      peek === current && !past14
+        ? ""
+        : '<p class="compass-peek"><strong>Dag ' +
+          peek +
+          ".</strong> " +
+          esc(ph.title) +
+          " " +
+          esc(ph.honest) +
+          "</p>";
+    return (
+      '<div class="compass-days-wrap">' +
+      '<div class="card-kicker">De første 14 dage</div>' +
+      '<div class="compass-days" role="list">' +
+      cells +
+      '</div><p class="hint">Dag 2–3 er toppen for de fleste. Tryk på en dag for at se, hvad der er forventeligt — et spænd, ikke et løfte.</p>' +
+      peekNote +
+      "</div>"
+    );
+  }
+
+  function contextualNowHtml(info) {
+    const s = info.s;
+    const hour = new Date().getHours();
+    function wrap(inner) {
+      return '<div class="card now-card reveal">' + inner + "</div>";
+    }
+    function cta(title, kicker, body, act, label, extra, id) {
+      return wrap(
+        '<div class="checkin-cta"><div class="now-card-body"><div class="card-kicker' +
+          (extra || "") +
+          '">' +
+          esc(kicker) +
+          "</div><strong>" +
+          esc(title) +
+          "</strong><p>" +
+          body +
+          '</p></div><button type="button" class="btn btn-ghost-mint btn-sm" data-act="' +
+          act +
+          '"' +
+          (id ? ' data-id="' + esc(id) + '"' : "") +
+          ">" +
+          esc(label) +
+          "</button></div>"
+      );
+    }
+
+    if (state.activeParty && !state.activeParty.endedAt) {
+      const party = upcomingParty();
+      return cta(
+        "Fest-mode er klar",
+        "Fest-mode",
+        "Få knapper, høj kontrast. Planen du lavede, mens du var ædru.",
+        "party-start",
+        "Åbn",
+        " gold",
+        (state.activeParty && state.activeParty.planId) || (party && party.id) || ""
+      );
+    }
+    if (state.activeParty && state.activeParty.endedAt && state.activeParty.held && !state.dismissed.partyHeld) {
+      return wrap(
+        '<div class="card-kicker mint">Du holdt fest-planen</div><p>Du kom igennem. Det er værd at mærke. Planen ligger klar til næste gang.</p>' +
+          '<button type="button" class="btn btn-ghost-mint btn-sm mt" data-act="dismiss-party-held">Luk</button>'
+      );
+    }
+    if (leftoversNeeded()) {
+      return wrap(
+        '<div class="callout coral" style="margin:0">Der ligger stadig poser. Hvis du kan, så smid dem ud nu — før suget kommer. En pose i skuffen er ikke et neutralt eksperiment.</div>' +
+          '<button type="button" class="btn btn-ghost btn-sm mt" data-act="dismiss-leftovers">Jeg har smidt dem ud</button>'
+      );
+    }
+    if (
+      !info.future &&
+      hour >= 5 &&
+      hour < 11 &&
+      info.hours < 720 &&
+      !ifThenFor("Morgenen") &&
+      !state.dismissed.morningPlan
+    ) {
+      return wrap(
+        '<div class="checkin-cta"><div class="now-card-body"><div class="card-kicker">Morgenen</div><strong>Første pose inden 30 minutter</strong><p>Omkring 80 % af tunge snusbrugere i et skandinavisk studie tog den første pose så hurtigt. Bind morgenen til en handling.</p></div>' +
+          '<button type="button" class="btn btn-ghost-mint btn-sm" data-act="add-plan" data-trigger="Morgenen">Lav plan</button></div>' +
+          '<button type="button" class="btn btn-ghost btn-sm mt" data-act="dismiss-morning">Ikke nu</button>'
+      );
+    }
+    if (isWeekendApproach() && (state.ifThenPlans || []).length && info.hours < 2160) {
+      return cta(
+        "Weekenden nærmer sig",
+        "Weekenden",
+        "Fest og alkohol er den hyppigste fælde. Her er planerne, du lavede, mens du var ædru.",
+        "weekend-review",
+        "Gennemgå",
+        " gold"
+      );
+    }
+    const party = upcomingParty();
+    if (party && !state.activeParty) {
+      return cta(
+        "Du har en fest-plan",
+        "Fest",
+        esc(party.say || "Nej tak, jeg tager ikke snus."),
+        "party-start",
+        "Tænd",
+        " gold",
+        party.id
+      );
+    }
+    if (info.hours < 21 * 24 && !info.future && !state.dismissed.partyHint) {
+      return wrap(
+        '<div class="checkin-cta"><div class="now-card-body"><div class="card-kicker coral">Fest og alkohol</div><strong>Den hyppigste fælde</strong><p>Lav en plan, mens du er ædru — før festen, ikke midt i den.</p></div>' +
+          '<button type="button" class="btn btn-ghost-mint btn-sm" data-act="goto-party">Lav plan</button></div>'
+      );
+    }
+    if (planPromptNeeded()) {
+      return wrap(
+        '<div class="checkin-cta"><div class="now-card-body"><div class="card-kicker">Hvis-så-planer</div><strong>Bind dine triggere til en handling</strong><p>Planen skal ligge klar, før suget kommer.</p></div>' +
+          '<button type="button" class="btn btn-ghost-mint btn-sm" data-act="goto-plans">Lav plan</button></div>' +
+          '<button type="button" class="btn btn-ghost btn-sm mt" data-act="dismiss-plan-prompt">Ikke nu</button>'
+      );
+    }
+    const d28 = day28Html(s, {});
+    if (d28) return d28;
+
+    const a = taperAllowance(new Date());
+    if (a) {
+      const used = finiteNum((state.taper.logs || {})[todayISO(new Date())], 0);
+      if (used > a.allow) {
+        return cta(
+          "Over dagens ramme",
+          "Nedtrapning",
+          "Bare videre — i morgen er en ny dag. Hold antallet, og sænk evt. hyppigheden først.",
+          "goto-taper",
+          "Log",
+          ""
+        );
+      }
+    }
+
+    const unread = (state.inbox || []).filter(function (m) { return !m.read; });
+    if (unread.length) {
+      const m = unread[0];
+      const peakDup = info.phase && info.phase.peak && (m.templateId === "d2" || m.templateId === "d2eve" || m.templateId === "d3" || m.templateId === "d3eve");
+      if (!peakDup) {
+        return cta(m.title, "Besked", esc(m.body), "goto-inbox", "Åbn", " mint");
+      }
+    }
+
+    if (!todayCheckin() && !info.future) {
+      return wrap(
+        '<div class="checkin-cta"><div class="now-card-body"><div class="card-kicker">Dagbog</div><strong>Hvordan har du det i dag?</strong><p>Et kort check-in. Det tager under ti sekunder.</p></div>' +
+          '<button type="button" class="btn btn-ghost-mint btn-sm" data-act="checkin">Check ind</button></div>'
+      );
+    }
+
+    if (a && !a.done && !info.future) {
+      const used = finiteNum((state.taper.logs || {})[todayISO(new Date())], 0);
+      return cta(
+        fmtNum(used, 1) + " / " + fmtNum(a.allow, 1) + " poser",
+        "Nedtrapning i dag",
+        "Dagens ramme.",
+        "goto-taper",
+        "Log",
+        ""
+      );
+    }
+    return "";
+  }
+
+  function openWeekendReview() {
+    const plans = state.ifThenPlans || [];
+    const fest = plans.filter(function (p) { return p.trigger === "Fest" || p.trigger === "Alkohol"; });
+    const rest = plans.filter(function (p) { return p.trigger !== "Fest" && p.trigger !== "Alkohol"; });
+    const ordered = fest.concat(rest);
+    openSheet(
+      "<h2>Weekenden</h2>" +
+        '<p class="sheet-lead">Fest og alkohol er den hyppigste fælde. Her er planerne, du lavede, mens du var ædru.</p>' +
+        (ordered.length
+          ? ordered.map(function (p) { return planCardHtml(p); }).join("")
+          : "<p>Lav en hvis-så-plan før weekenden.</p>") +
+        '<button type="button" class="btn btn-gold btn-block mt" data-act="goto-party">Fest-plan</button>' +
+        '<button type="button" class="btn btn-ghost-mint btn-block mt" data-act="goto-plans">Alle planer</button>' +
+        '<button type="button" class="btn btn-ghost btn-block mt" data-act="close-modal">Luk</button>'
+    );
+  }
+
+
   function renderHome() {
     const el = $("#view-home");
     const s = stats();
     const t = s.future ? splitTime(-s.rawMs) : splitTime(s.ms);
-    const parts = moneyParts(s.money);
     const nm = nextMilestone(s);
+    const info = compassPhase();
+    const manyDays = t.days >= 1000;
+
     let teaser = "";
     if (nm.m) {
       const p = Math.max(0, Math.min(1, (s.ms / 1000 - nm.prev) / (nm.m.after - nm.prev)));
@@ -1600,120 +2189,51 @@
         "</strong><p>" +
         esc(fmtEta(nm.m.after - s.ms / 1000)) +
         "</p></div></div></div>";
-    } else {
+    } else if (!s.future && s.days >= 365) {
       teaser =
         '<div class="card reveal"><div class="card-kicker mint">Milepæle</div>' +
-        "<p>Du har nået et helt års milepæl. Imponerende — og værd at fejre.</p></div>";
+        "<p>Du har nået et helt års milepæl. Historikken står. Fortsæt som du har gjort.</p></div>";
     }
 
     const inst =
       !isStandalone() && !state.dismissed.install
-        ? '<div class="install reveal" id="install-banner">' +
+        ? '<div class="install install-late reveal" id="install-banner">' +
           '<div><strong>Føj til hjemmeskærm</strong><p>I Safari: tryk på Dele-ikonet, og vælg <em>Føj til hjemmeskærm</em>. Så virker Snusfri som en rigtig app — også offline.</p></div>' +
-          '<button class="x" data-act="dismiss-install" aria-label="Luk">✕</button></div>'
+          '<button type="button" class="x" data-act="dismiss-install" aria-label="Luk banner">✕</button></div>'
         : "";
 
     const ci = todayCheckin();
-    const checkinCard = ci
-      ? '<div class="card reveal"><div class="card-kicker mint">Dagens check-in</div>' +
-        "<p>Tak. Humør i dag: <strong>" +
-        esc((MOODS.find((m) => m.id === ci.mood) || {}).face || "") +
-        " " +
-        esc((MOODS.find((m) => m.id === ci.mood) || {}).label || "") +
-        "</strong>" +
-        (checkinStreak() > 1 ? " · " + checkinStreak() + " dage i træk" : "") +
-        ".</p></div>"
-      : '<div class="card reveal"><div class="checkin-cta"><div><div class="card-kicker">Dagbog</div>' +
-        "<strong>Hvordan har du det i dag?</strong>" +
-        "<p>Et kort check-in. Det tager under ti sekunder.</p></div>" +
-        '<button class="btn btn-ghost-mint btn-sm" data-act="checkin">Check ind</button></div></div>';
-
     const quote = reasonsSwipeHtml("Din grund");
+    const showCompassFirst = info.future || (info.phase && info.phase.peak) || info.hours < 168;
+    const compass = compassHomeHtml(info);
+    const context = contextualNowHtml(info);
+    const checkinDone =
+      ci && context.indexOf("data-act=\"checkin\"") < 0
+        ? '<div class="card reveal"><div class="card-kicker mint">Dagens check-in</div>' +
+          "<p>Tak. Humør i dag: <strong>" +
+          esc((MOODS.find(function (m) { return m.id === ci.mood; }) || {}).face || "") +
+          " " +
+          esc((MOODS.find(function (m) { return m.id === ci.mood; }) || {}).label || "") +
+          "</strong>" +
+          (checkinStreak() > 1 ? " · " + checkinStreak() + " dage i træk" : "") +
+          ".</p></div>"
+        : "";
 
-    const info = compassPhase();
-    const compass = (info.hours < 720 || info.phase.peak)
-      ? compassCardHtml({ full: false })
-      : '<div class="card reveal"><div class="checkin-cta"><div><div class="card-kicker gold">Abstinens-kompas</div><strong>' +
-        esc(info.phase.title) +
-        '</strong><p>' +
-        esc(info.phase.honest) +
-        '</p></div><button class="btn btn-ghost-mint btn-sm" data-act="goto-compass">Se</button></div></div>';
-
-    const party = upcomingParty();
-    const partyCard = state.activeParty && !state.activeParty.endedAt
-      ? '<div class="card reveal"><div class="checkin-cta"><div><div class="card-kicker gold">Fest-mode</div><strong>Fest-mode er klar</strong><p>Få knapper, høj kontrast. Planen du lavede, mens du var ædru.</p></div>' +
-        '<button class="btn btn-gold btn-sm" data-act="party-start" data-id="' +
-        esc((state.activeParty && state.activeParty.planId) || (party && party.id) || "") +
-        '">Åbn</button></div></div>'
-      : party
-      ? '<div class="card reveal"><div class="checkin-cta"><div><div class="card-kicker gold">Fest</div><strong>Du har en plan</strong><p>' +
-        esc(party.say || "Nej tak, jeg tager ikke snus.") +
-        "</p></div>" +
-        '<button class="btn btn-gold btn-sm" data-act="party-start" data-id="' +
-        esc(party.id) +
-        '">Tænd</button></div></div>'
-      : (info.hours < 21 * 24 && !state.dismissed.partyHint
-          ? '<div class="card reveal"><div class="checkin-cta"><div><div class="card-kicker coral">Fest og alkohol</div><strong>Den hyppigste fælde</strong><p>Lav en plan, mens du er ædru — før festen, ikke midt i den.</p></div>' +
-            '<button class="btn btn-ghost-mint btn-sm" data-act="goto-party">Lav plan</button></div></div>'
-          : "");
-
-    const heldCard = (state.activeParty && state.activeParty.endedAt && state.activeParty.held && !state.dismissed.partyHeld)
-      ? '<div class="card reveal"><div class="card-kicker mint">Du holdt fest-planen</div><p>Du kom igennem. Det er værd at mærke. Planen ligger klar til næste gang.</p>' +
-        '<button class="btn btn-ghost-mint btn-sm mt" data-act="dismiss-party-held">Luk</button></div>'
-      : "";
-
-    const weekendCard = (isWeekendApproach() && (state.ifThenPlans || []).length && info.hours < 2160)
-      ? '<div class="card reveal"><div class="card-kicker gold">Weekenden</div><strong>Her er planen, du lavede ædru.</strong>' +
-        planCardHtml((state.ifThenPlans.filter(function (p) { return p.trigger === "Fest" || p.trigger === "Alkohol"; })[0] || state.ifThenPlans[0])) +
-        '<button class="btn btn-ghost-mint btn-sm" data-act="goto-plans">Alle planer</button></div>'
-      : "";
-
-    const planCard = planPromptNeeded()
-      ? '<div class="card reveal"><div class="checkin-cta"><div><div class="card-kicker">Hvis-så-planer</div><strong>Bind dine triggere til en handling</strong><p>Planen skal ligge klar, før suget kommer.</p></div>' +
-        '<button class="btn btn-ghost-mint btn-sm" data-act="goto-plans">Lav plan</button></div></div>'
-      : "";
-
-    const leftCard = leftoversNeeded()
-      ? '<div class="card reveal"><div class="callout coral" style="margin:0">Der ligger stadig poser. Hvis du kan, så smid dem ud nu — før suget kommer. En pose i skuffen er ikke et neutralt eksperiment.</div>' +
-        '<button class="btn btn-ghost btn-sm mt" data-act="dismiss-leftovers">Jeg har smidt dem ud</button></div>'
-      : "";
-
-    const week1Help = info.hours < 168
-      ? stoplinienCardHtml(true)
-      : "";
-
-    const inboxN = unreadInbox();
-    const inboxCard = inboxN
-      ? '<div class="card reveal"><div class="checkin-cta"><div><div class="card-kicker mint">Besked</div><strong>' +
-        esc(state.inbox.filter(function (m) { return !m.read; })[0].title) +
-        '</strong><p>' +
-        esc(state.inbox.filter(function (m) { return !m.read; })[0].body) +
-        '</p></div><button class="btn btn-ghost-mint btn-sm" data-act="goto-inbox">Åbn</button></div></div>'
-      : "";
-
-    const taperCard = (function () {
-      const a = taperAllowance(new Date());
-      if (!a) return "";
-      const used = Number((state.taper.logs || {})[todayISO(new Date())] || 0);
-      return (
-        '<div class="card reveal"><div class="card-kicker">Nedtrapning i dag</div>' +
-        '<div class="checkin-cta"><div><strong>' +
-        esc(fmtNum(used, 1) + " / " + fmtNum(a.allow, 1)) +
-        " poser</strong><p>" +
-        (used > a.allow ? "Over dagens ramme — bare videre, i morgen er en ny dag." : "Dagens ramme.") +
-        '</p></div><button class="btn btn-ghost-mint btn-sm" data-act="goto-taper">Log</button></div></div>'
-      );
-    })();
-
+    /* First fold: hero → how am I (compass in week 1) → what helps now → compact money.
+       One contextual card after. Reasons, teaser, install sit below the fold. */
     el.innerHTML =
-      '<section class="hero">' +
+      '<section class="hero' +
+      (showCompassFirst ? " hero-compact" : "") +
+      '">' +
       '<img class="hero-img" src="icons/hero.jpg" srcset="icons/hero@2x.jpg 780w, icons/hero.jpg 1170w" sizes="(min-width: 560px) 430px, 100vw" alt="">' +
       '<div class="hero-glow"></div><div class="hero-vignette"></div>' +
       '<div class="hero-content">' +
       '<p class="hero-kicker" id="hero-kicker">' +
       (s.future ? "Starter om" : "Snusfri i") +
       "</p>" +
-      '<div class="hero-days"><span class="hero-days-num" id="live-days">' +
+      '<div class="hero-days' +
+      (manyDays ? " many" : "") +
+      '"><span class="hero-days-num" id="live-days">' +
       esc(fmtNum(t.days, 0)) +
       '</span><span class="hero-days-unit" id="live-unit">' +
       plural(t.days, "dag", "dage") +
@@ -1730,59 +2250,18 @@
       "</strong><span>sek</span></div>" +
       "</div></div></section>" +
       '<div class="sheet">' +
-      inst +
-      (info.hours < 168 ? compass : "") +
-      '<div class="card reveal" style="' +
-      (inst ? "margin-top:0.75rem" : "") +
-      '">' +
-      '<div class="card-kicker gold">Penge sparet</div>' +
-      '<div class="money-row">' +
-      '<span class="money-int" id="money-int">' +
-      parts.sign +
-      parts.int +
-      '</span><span class="money-dec" id="money-dec">,' +
-      parts.dec +
-      '</span><span class="money-cur">kr</span></div>' +
-      '<div class="mini-stats">' +
-      '<div class="mini-stat gold"><div class="v">' +
-      esc(fmtKr(s.per.year, 0)) +
-      '</div><div class="l">På et år</div></div>' +
-      '<div class="mini-stat mint"><div class="v">' +
-      esc(fmtNum(Math.floor(s.cans), 0)) +
-      '</div><div class="l">' +
-      plural(Math.floor(s.cans), "dåse undgået", "dåser undgået") +
-      "</div></div></div>" +
-      '<div class="period-grid">' +
-      periodCell(s.per.day, "pr. dag") +
-      periodCell(s.per.week, "pr. uge") +
-      periodCell(s.per.month, "pr. måned") +
-      periodCell(s.per.year, "pr. år") +
-      "</div>" +
-      '<div class="mini-stats" style="margin-top:0.7rem">' +
-      '<div class="mini-stat"><div class="v">' +
-      esc(fmtPouches(s.pouches)) +
-      '</div><div class="l">poser undgået</div></div>' +
-      '<div class="mini-stat sky"><div class="v">' +
-      esc(fmtNic(s.nicotine)) +
-      '</div><div class="l">nikotin undgået</div></div>' +
-      '<div class="mini-stat lav" style="grid-column:1/-1"><div class="v">' +
-      esc(fmtTimeWon(s.minutes)) +
-      '</div><div class="l">tid vundet · anslået 5 min. pr. pose</div></div>' +
-      "</div></div>" +
-      teaser +
-      (info.hours >= 168 ? compass : "") +
+      (showCompassFirst ? compass : "") +
+      nowHelpHtml() +
+      moneyCompactHtml(s) +
+      context +
+      (showCompassFirst ? "" : compass) +
       quote +
-      heldCard +
-      partyCard +
-      weekendCard +
-      planCard +
-      leftCard +
-      inboxCard +
-      checkinCard +
-      taperCard +
-      week1Help +
+      checkinDone +
+      teaser +
+      inst +
       "</div>";
   }
+
   function periodCell(n, label) {
     return (
       '<div class="period"><div class="v">' +
@@ -1877,7 +2356,13 @@
       esc(String((state.sleepLog[todayISO(new Date())] || {}).wakes || 0)) +
       '">' +
       '<button type="button" data-act="step" data-dir="1" data-target="sleep-wakes" data-amt="1">+</button></div></div>' +
-      '<button class="btn btn-ghost-mint btn-sm" data-act="sleep-save">Gem søvn</button>' +
+      '<button type="button" class="btn btn-ghost-mint btn-sm" data-act="sleep-save">Gem søvn</button>' +
+      '<div class="field mt"><label for="weight-kg">Vægt i dag, kg (valgfri — kun for dig)</label>' +
+      '<input id="weight-kg" class="input" inputmode="decimal" placeholder="Fx 78,5" value="' +
+      esc(String(((state.weightLog || {})[todayISO(new Date())] || {}).kg || "")) +
+      '">' +
+      '<p class="hint">Ikke et slankeprogram. Et diskret tal, hvis du selv vil følge det.</p></div>' +
+      '<button type="button" class="btn btn-ghost-mint btn-sm" data-act="weight-save">Gem vægt</button>' +
       '<p class="fine-src">Kilder: Stoplinien, Helsenorge, og et dansk brugerforløb. Alle reagerer forskelligt.</p></div>';
 
     el.innerHTML =
@@ -1885,6 +2370,7 @@
       '<h1 class="page-title">Sundhed</h1>' +
       '<p class="page-sub">Hvor du er i forløbet — ærligt, med spænd, ikke løfter. Milepælene under er vejledende, ikke medicinsk rådgivning.</p>' +
       compassCardHtml({ full: true }) +
+      day28Html(s, { health: true, force: true }) +
       '<div class="section-label">Abstinens-forløbet</div>' +
       '<div class="card"><div class="timeline compass-timeline">' +
       phases +
@@ -2123,6 +2609,10 @@
               "</span><span>" +
               (reached ? "" : esc(goalEta(g.price, s))) +
               "</span></div>" +
+              (function () {
+                const rs = reasonsList().find(function (r) { return r.id === g.reasonId; });
+                return rs ? '<p class="goal-reason">Knyttet til: ' + esc(rs.text) + "</p>" : "";
+              })() +
               '<div class="goal-actions"><button class="btn btn-ghost btn-sm" data-act="edit-goal" data-id="' +
               esc(g.id) +
               '">Rediger</button>' +
@@ -2173,16 +2663,6 @@
     if (morePage === "nf") return renderNicotineFree(el);
     if (morePage === "data") return renderData(el);
 
-    if (morePage === "plans") return renderPlans(el);
-    if (morePage === "party") return renderPartyPage(el);
-    if (morePage === "reasons") return renderReasonsPage(el);
-    if (morePage === "buddy") return renderBuddy(el);
-    if (morePage === "help") return renderHelp(el);
-    if (morePage === "days") return renderDays(el);
-    if (morePage === "inbox") return renderInbox(el);
-    if (morePage === "nf") return renderNicotineFree(el);
-    if (morePage === "data") return renderData(el);
-
     const ciN = (state.checkins || []).length;
     const slipN = (state.slips || []).length;
     const streakN = (state.streaks || []).length;
@@ -2198,6 +2678,7 @@
       row("party", "🌙", "gold", "Fest-mode", state.activeParty && !state.activeParty.endedAt ? "Aktiv nu" : "Plan lavet ædru", "") +
       row("reasons", "✍️", "lav", "Mine grunde", reasonsList().length ? reasonsList().length + " grunde" : "Ét swipe væk", "") +
       row("buddy", "🤝", "sky", "Makker", (state.buddy && state.buddy.name) ? state.buddy.name : "Én livline, ingen feed", "") +
+      row("share", "📤", "gold", "Del dit overblik", "Dage og sparede kroner — som et glansbillede", "share-status") +
       "</div>" +
       '<div class="section-label">Hjælp</div>' +
       '<div class="rows">' +
@@ -2271,13 +2752,16 @@
               "</div>" +
               (c.note ? "<p>" + esc(c.note) + "</p>" : "") +
               (c.sleepWakes ? "<p>Søvn: " + esc(String(c.sleepWakes)) + " opvågninger</p>" : "") +
+              ((state.weightLog && state.weightLog[c.date] && state.weightLog[c.date].kg)
+                ? "<p>Vægt: " + esc(String(state.weightLog[c.date].kg)) + " kg</p>"
+                : "") +
               '</div><button class="btn btn-ghost btn-sm" data-act="checkin-edit" data-date="' +
               esc(c.date) +
               '">Ret</button></div>'
             );
           })
           .join("")
-      : '<p class="empty">Ingen check-ins endnu.</p>';
+      : '<div class="card empty-rich"><div class="big">📓</div><p>Ingen check-ins endnu. Et kort tjek i dag — det tager under ti sekunder, og det er kun for dig.</p></div>';
     const today = todayCheckin();
     el.innerHTML = subWrap(
       "Dagbog",
@@ -2563,7 +3047,10 @@
           '<div class="tip"><div class="n">2</div><div>Tryk på <strong>Dele</strong>-ikonet — firkanten med pilen opad — i bunden (eller toppen) af skærmen.</div></div>' +
           '<div class="tip"><div class="n">3</div><div>Rul og vælg <strong>Føj til hjemmeskærm</strong>. Tryk på Tilføj.</div></div>' +
           '<div class="tip"><div class="n">4</div><div>Åbn Snusfri fra hjemmeskærmen. Den kører fuld skærm, også uden net.</div></div>' +
-          "</div>")
+          "</div>") +
+        '<div class="card mt"><div class="card-kicker gold">Overblik uden at åbne appen</div>' +
+        "<p>En ægte iOS-hjemmeskærms-widget kræver en native app — det kan en web-app ikke levere. Forsiden er bygget som et kompakt glansbillede, og du kan dele dage og sparede kroner som tekst. På enheder der tillader det, kan varsler vise det samme, når appen er åben.</p>" +
+        '<button type="button" class="btn btn-ghost-mint btn-block mt" data-act="share-status">Del dit overblik</button></div>'
     );
   }
 
@@ -2576,7 +3063,7 @@
     });
     const list = plans.length
       ? plans.map(function (p) { return planCardHtml(p, { actions: true }); }).join("")
-      : '<p class="empty">Ingen planer endnu. Vælg en trigger og bind den til en konkret handling.</p>';
+      : '<div class="card empty-rich"><div class="big">🗺️</div><p>Ingen planer endnu. Vælg en trigger og bind den til en konkret handling — beslutningen skal ligge klar, før suget kommer.</p></div>';
     const sugg = suggested.length
       ? '<div class="section-label">Foreslået ud fra din log</div>' +
         suggested
@@ -2659,7 +3146,8 @@
       "</textarea></div>" +
       '<button class="btn btn-primary btn-block" data-act="buddy-save">Gem makker</button>' +
       '<p class="fine-src mt">Ingen offentlig feed. Bare én livline. Stoplinien er der også: 80 31 31 31.</p>';
-    el.innerHTML = subWrap("Makker", (has ? "" : '<p class="page-sub">Vælg én person, der ved det. En festplan virker bedre, hvis én ven er med.</p>') + body);
+    el.innerHTML = subWrap("Makker", (has ? "" : '<p class="page-sub">Vælg én person, der ved det. En festplan virker bedre, hvis én ven er med.</p>') + body +
+      '<button type="button" class="btn btn-ghost-mint btn-block mt" data-act="buddy-share">Del en besked til din makker</button>');
   }
 
   function renderHelp(el) {
@@ -3023,6 +3511,7 @@
 
   function startWave(opts) {
     opts = opts || {};
+    haptic("start");
     const sos = opts.sos || (function () { try { return readSos(); } catch (e) { return {}; } })();
     closeModal();
     const screen = $("#wave-screen");
@@ -3158,6 +3647,7 @@
   function endWave(sos, kind) {
     closeWave();
     const counted = kind === "done" || kind === "okay";
+    if (counted) haptic("done");
     const waves = (Number(state.wavesRidden) || 0) + (counted ? 1 : 0);
     const ints = [];
     for (let i = 1; i <= 10; i++) {
@@ -3722,7 +4212,11 @@
     );
     openSheet(
       "<h2>Hvad tager du med?</h2>" +
-        '<p class="aftersyn-lead">Ingen grund til at begynde på fuld tid igen. Streaken er én måling, ikke din værdi. Historikken står. Vi starter igen nu — ikke i morgen.</p>' +
+        '<p class="aftersyn-lead">Ingen grund til at begynde på fuld tid igen. Streaken er én måling, ikke din værdi. Historikken står. Vi starter igen nu — ikke i morgen.' +
+        ((state.slips || []).filter(function (x) { return todayISO(x.at) === todayISO(slip.at); }).length > 1
+          ? " Det er stadig i dag."
+          : "") +
+        "</p>" +
         '<div class="field"><label>Hvad vil du gøre anderledes næste gang?</label>' +
         '<textarea id="slip-next" class="input" maxlength="240" style="min-height:5rem" placeholder="Fx: Hvis jeg er til fest og bliver budt, så siger jeg nej tak og drikker et glas vand.">' +
         esc(tmpl.ifText + " " + tmpl.thenText) +
@@ -3844,6 +4338,30 @@
         '<input id="goal-price" class="input" inputmode="decimal" placeholder="14999" value="' +
         esc(g ? String(g.price) : "") +
         '"></div>' +
+        (function () {
+          const list = reasonsList();
+          if (!list.length) return "";
+          const cur = g && g.reasonId;
+          return (
+            '<div class="field"><label for="goal-reason">Knyt til en grund (valgfrit)</label>' +
+            '<select id="goal-reason" class="input">' +
+            '<option value="">Ingen særlig grund</option>' +
+            list
+              .map(function (r) {
+                return (
+                  '<option value="' +
+                  esc(r.id) +
+                  '"' +
+                  (cur === r.id ? " selected" : "") +
+                  ">" +
+                  esc(r.text.length > 72 ? r.text.slice(0, 70) + "…" : r.text) +
+                  "</option>"
+                );
+              })
+              .join("") +
+            "</select></div>"
+          );
+        })() +
         '<button class="btn btn-gold btn-block" data-act="goal-save" data-id="' +
         esc(g ? g.id : "") +
         '">Gem mål</button>'
@@ -3853,6 +4371,7 @@
   function saveGoal(id) {
     const name = (($("#goal-name") || {}).value || "").trim();
     const price = parseNum(($("#goal-price") || {}).value);
+    const reasonId = (($("#goal-reason") || {}).value || "").trim();
     if (!name) {
       toast("Giv målet et navn.", "warn");
       return;
@@ -3866,6 +4385,7 @@
       if (g) {
         g.name = name;
         g.price = price;
+        g.reasonId = reasonId || "";
         if (g.reachedAt && stats().money < price) g.reachedAt = null;
       }
     } else {
@@ -3874,7 +4394,8 @@
         name: name,
         price: price,
         createdAt: new Date().toISOString(),
-        reachedAt: null
+        reachedAt: null,
+        reasonId: reasonId || ""
       });
     }
     save();
@@ -4243,6 +4764,34 @@
       toast("Gør den færdig, før du beslutter noget andet.");
     },
     "bare-en": () => openBareEn(),
+    "toggle-money": () => { homeMoneyOpen = !homeMoneyOpen; if (view === "home") renderHome(); else render(); },
+    "share-status": () => shareStatus(),
+    "buddy-share": () => shareStatus({ buddy: true }),
+    "compass-day": (el) => {
+      compassPeekDay = Number(el.dataset.day) || null;
+      if (view === "health") renderHealth();
+      else render();
+    },
+    "weekend-review": () => openWeekendReview(),
+    "dismiss-morning": () => { state.dismissed.morningPlan = true; save(); render(); },
+    "dismiss-d28": () => { state.dismissed.d28 = true; save(); render(); },
+    "dismiss-plan-prompt": () => { state.dismissed.planPrompt = true; save(); render(); },
+    "weight-save": () => {
+      const raw = (($("#weight-kg") || {}).value || "").trim().replace(",", ".");
+      if (!raw) {
+        toast("Skriv en vægt, eller lad feltet stå.", "warn");
+        return;
+      }
+      const kg = parseNum(raw);
+      if (!(kg > 20 && kg < 400)) {
+        toast("Tallet ser usædvanligt ud. Tjek det lige.", "warn");
+        return;
+      }
+      state.weightLog = state.weightLog || {};
+      state.weightLog[todayISO(new Date())] = { kg: kg, at: new Date().toISOString() };
+      save();
+      toast("Vægt gemt. Kun for dig — det her er ikke et slankeprogram.");
+    },
     "goto-compass": () => { view = "health"; morePage = null; closePartyScreen(); render(); },
     "goto-plans": () => { view = "more"; morePage = "plans"; closeModal(); closePartyScreen(); render(); },
     "goto-party": () => { view = "more"; morePage = "party"; closeModal(); render(); },
@@ -4724,6 +5273,7 @@
     state.notifyPrefs = { enabled: false, earlyIntense: true, times: ["08:00", "22:00"] };
     state.dayLog = {};
     state.sleepLog = {};
+    state.weightLog = {};
     state.profile.leftovers = "no";
     state.profile.alcoholFirstWeeks = "little";
     state.profile.quitMode = "cold";
@@ -4810,9 +5360,17 @@
     }
     document.addEventListener("click", onTap);
     // Prevent accidental double-tap zoom delay already handled by viewport
-    if (state.onboarded) ensureInbox();
     render();
+    hideBoot();
+    setTimeout(hideBoot, 1800);
     startTick();
+    afterPaint(function () {
+      if (!state.onboarded) return;
+      const before = (state.inbox || []).length;
+      ensureInbox();
+      checkAchievements(true);
+      if ((state.inbox || []).length !== before && view === "home") renderHome();
+    });
     if (state.onboarded && state.activeParty && !state.activeParty.endedAt) {
       const plan = (state.partyPlans || []).find(function (p) { return p.id === state.activeParty.planId; });
       if (plan) showPartyScreen(plan);
@@ -4831,7 +5389,7 @@
         });
         try { reg.update(); } catch (e) {}
       }).catch(() => {});
-      /* Reload once a new worker claims, so the installed PWA picks up v8+.
+      /* Reload once a new worker claims, so the installed PWA picks up v9+.
          Only when we already had a controller — skip the first-install flash. */
       if (hadController) {
         let refreshing = false;
@@ -4860,6 +5418,12 @@
     startPartyMode: startPartyMode,
     showPartyScreen: showPartyScreen,
     adoptData: adoptData,
+    calendarDaysBetween: calendarDaysBetween,
+    finiteNum: finiteNum,
+    timeIsNear: timeIsNear,
+    shareStatus: shareStatus,
+    haptic: haptic,
+    openWeekendReview: openWeekendReview,
     WAVE_MS: function (ms) { if (ms) WAVE_MS = ms; return WAVE_MS; },
     reset: () => {
       state = defaultState();

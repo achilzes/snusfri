@@ -1,5 +1,5 @@
 /* Snusfri service worker — offline-first, shell is network-first */
-const VERSION = 'snusfri-v8';
+const VERSION = 'snusfri-v9';
 const ASSETS = [
   './',
   './index.html',
@@ -95,6 +95,20 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => cached);
       return cached || fetched;
+    })
+  );
+});
+
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (let i = 0; i < list.length; i++) {
+        const c = list[i];
+        if (c.url && 'focus' in c) return c.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow('./');
     })
   );
 });

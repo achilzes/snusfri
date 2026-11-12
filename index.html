@@ -2,6 +2,7 @@
 <html lang="da">
 <head>
   <meta charset="utf-8">
+  <style>html,body{background:#0A110E;margin:0;}</style>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <script>
   /* Pin the shell to the physical screen in iOS standalone.
@@ -78,11 +79,15 @@
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
   <link rel="icon" href="favicon.ico">
+  <link rel="preload" href="fonts/fraunces-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/outfit-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="icons/hero.jpg" as="image">
   <link rel="stylesheet" href="fonts/fonts.css">
   <link rel="stylesheet" href="styles.css">
   <title>Snusfri</title>
 </head>
 <body>
+  <div id="boot" class="boot-splash" role="status">Snusfri</div>
   <div id="app">
     <div id="onboarding" class="onboarding hidden" aria-live="polite"></div>
 

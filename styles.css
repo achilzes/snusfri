@@ -2077,3 +2077,238 @@ input, textarea, select {
   .party-btn { min-height: 3.1rem; margin-bottom: 0.4rem; font-size: 1rem; }
   .wave-title { font-size: 1.25rem; }
 }
+
+/* ============================================================
+   v9 — design polish, home IA, a11y, first-paint
+   ============================================================ */
+
+:root {
+  /* Stronger mute contrast on #0A110E (~6:1, WCAG AA for small text) */
+  --text-mute: #8A988F;
+}
+
+/* Focus for keyboard / VoiceOver / external keyboard */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* Tap targets ≥ 44px */
+.btn { min-height: 44px; min-width: 44px; }
+.btn-sm { min-height: 44px; padding: 0.55rem 0.95rem; }
+.tab { min-height: 44px; }
+.back { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+.install .x {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+.stepper button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+.mood { min-height: 44px; }
+.chip { min-height: 44px; }
+.seg button { min-height: 44px; }
+.intensity button { min-height: 44px; min-width: 44px; }
+.fab-sos { min-width: 44px; min-height: 44px; }
+
+/* First-paint splash — painted before JS parses */
+.boot-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: #0A110E;
+  color: var(--gold);
+  font-family: var(--display), Georgia, serif;
+  font-weight: 700;
+  font-size: 2rem;
+  letter-spacing: -0.03em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+.boot-splash.off { opacity: 0; }
+
+/* Compact hero in week 1 so compass + "hvad hjælper nu" fit the first screen */
+.hero.hero-compact {
+  height: clamp(13.25rem, calc(var(--app-h, 100dvh) - var(--nav-h) - 23.5rem), 21.5rem);
+}
+
+/* "Hvad hjælper nu" — three equal actions, always in the first fold */
+.now-help {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+  margin: 0 0 0.85rem;
+}
+.now-act {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12rem;
+  min-height: 56px;
+  padding: 0.55rem 0.3rem;
+  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  color: var(--text);
+  text-align: center;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.now-act:active { transform: scale(0.97); background: var(--bg-card-2); }
+.now-act .now-lab {
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.now-act .now-sub {
+  font-size: 0.62rem;
+  color: var(--text-mute);
+  line-height: 1.2;
+}
+.now-act.sos {
+  background: var(--coral-dim);
+  border-color: rgba(224, 122, 95, 0.35);
+}
+.now-act.sos .now-lab { color: var(--coral-soft); }
+.now-act.sos .now-sub { color: var(--coral-soft); opacity: 0.8; }
+
+/* Compact money — details unfold on tap */
+.money-compact { padding: 0.95rem 3.5rem 1rem 1.05rem; } /* right pad clears the SOS FAB */
+.money-hit {
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  min-height: 44px;
+  cursor: pointer;
+}
+.money-hit .money-row { align-items: baseline; }
+.money-brief {
+  margin-top: 0.28rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.money-chev {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--text-mute);
+  padding-left: 0.5rem;
+  align-self: center;
+}
+.money-details { margin-top: 0.75rem; }
+.money-row.big .money-int { font-size: clamp(1.35rem, 7.5vw, 2.1rem); }
+.money-row.huge .money-int { font-size: clamp(1.05rem, 6vw, 1.65rem); overflow-wrap: anywhere; }
+.hero-days.many .hero-days-num { font-size: clamp(2.2rem, 16vw, 4.2rem); }
+
+/* Single contextual "now" card — shorter than v8's stack */
+.now-card .now-card-body { min-width: 0; }
+.now-card .now-card-body p {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-top: 0.15rem;
+}
+
+/* 14-day compass strip */
+.compass-days-wrap { margin: 0.85rem 0 1.1rem; }
+.compass-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.4rem;
+  margin: 0.55rem 0 0.45rem;
+}
+.cday {
+  min-height: 44px;
+  min-width: 0;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.88rem;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.cday:active { transform: scale(0.96); }
+.cday.past { color: var(--text); }
+.cday.peak { border-color: rgba(224, 122, 95, 0.4); }
+.cday.today { box-shadow: 0 0 0 1px var(--mint-dim); }
+.cday.on {
+  background: var(--mint-dim);
+  border-color: var(--mint);
+  color: var(--mint);
+}
+.cday.peak.on {
+  background: var(--coral-dim);
+  border-color: var(--coral);
+  color: var(--coral-soft);
+}
+.compass-peek {
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+  margin-top: 0.35rem;
+}
+.sym .linkish { display: inline-block; margin-top: 0.2rem; min-height: 44px; padding: 0.45rem 0; }
+
+/* Reasons a bit tighter on home */
+.reasons-swipe { margin: 0.15rem 0 0.85rem; }
+
+/* Empty states */
+.empty-rich {
+  text-align: center;
+  padding: 1.4rem 1rem;
+}
+.empty-rich .big { font-size: 1.8rem; margin-bottom: 0.4rem; }
+.empty-rich p { color: var(--text-dim); font-size: 0.92rem; line-height: 1.45; }
+
+/* 28-day delmål */
+.goal28 p { color: var(--text-dim); font-size: 0.88rem; margin-top: 0.3rem; line-height: 1.45; }
+
+/* Install banner: don't steal the first fold */
+.install.install-late { margin-top: 0.5rem; }
+
+/* Linked reason on a savings goal */
+.goal-reason {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--text-dim);
+  margin-top: 0.35rem;
+}
+
+@media (max-height: 700px) {
+  .hero.hero-compact {
+    height: clamp(11.5rem, calc(var(--app-h, 100dvh) - var(--nav-h) - 21.5rem), 16.25rem);
+  }
+  .now-act { min-height: 48px; padding: 0.4rem 0.25rem; }
+  .now-act .now-lab { font-size: 0.72rem; }
+  .now-help { margin-bottom: 0.65rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-splash { transition: none; }
+  .now-act, .cday, .btn { transition: none; }
+  .now-act:active, .cday:active, .btn:active { transform: none; }
+}
+
+@media (orientation: landscape) and (max-height: 540px) {
+  .now-help { margin-bottom: 0.45rem; }
+  .now-act { min-height: 44px; padding: 0.28rem 0.2rem; }
+  .hero.hero-compact {
+    height: auto;
+    min-height: 10rem;
+    max-height: calc(var(--app-h, 100dvh) - var(--nav-h) - 8.5rem);
+  }
+}
