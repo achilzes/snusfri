@@ -50,7 +50,7 @@
       id: "20m",
       after: 20 * 60,
       title: "20 minutter",
-      body: "Puls og blodtryk begynder ofte at falde mod dit eget normale niveau, når nikotinen ikke længere stimulerer kroppen."
+      body: "For mange begynder puls og blodtryk at falde mod deres eget niveau, når nikotinen ikke længere stimulerer. Vi kan ikke love et bestemt tal — kroppe er forskellige."
     },
     {
       id: "8h",
@@ -62,7 +62,7 @@
       id: "24h",
       after: 24 * 3600,
       title: "1 døgn",
-      body: "Kroppen har arbejdet et helt døgn uden ny nikotin. Nogle mærker allerede en lille forskel i smag og mundfølelse."
+      body: "Kroppen har arbejdet et helt døgn uden ny nikotin. Nogle mærker en lille forskel i mundfølelse. Søvnen kan være urolig de første nætter — for mange letter den i løbet af 1–2 uger."
     },
     {
       id: "72h",
@@ -74,13 +74,13 @@
       id: "1w",
       after: 7 * 86400,
       title: "1 uge",
-      body: "De fysiske abstinenser aftager som regel. Du har klaret den fase, de fleste finder hårdest."
+      body: "De fysiske abstinenser aftager for mange. Søvnen kan stadig være urolig. Du har klaret den fase, de fleste finder hårdest — det er ikke et løfte om, at resten er let."
     },
     {
       id: "2w",
       after: 14 * 86400,
       title: "2 uger",
-      body: "Kredsløbet arbejder uden konstant nikotin. For mange kommer trangen sjældnere og føles svagere."
+      body: "Kredsløbet arbejder uden konstant nikotin. For mange kommer trangen sjældnere. Hjernens belønningssystem tilpasser sig langsomt, når nikotinen ikke længere giver det sædvanlige skub — der er ikke en fast dag, hvor det er «nulstillet»."
     },
     {
       id: "d28",
@@ -92,19 +92,19 @@
       id: "1mo",
       after: 30 * 86400,
       title: "1 måned",
-      body: "Mange oplever mere energi og bedre mundfølelse. Tandkød og slimhinder får en pause fra poser og dåser."
+      body: "For mange er der mere ro i mund og tandkød, som får en pause fra poser. Slimhinderne heler i deres eget tempo — ikke på en fast dato."
     },
     {
       id: "3mo",
       after: 90 * 86400,
       title: "3 måneder",
-      body: "Vanen er ved at være brudt. Irritation i mund og tandkød er ofte mærkbart mindre end da du brugte snus hver dag."
+      body: "For mange er vanen ved at være brudt, og irritation i mund og tandkød er mærkbart mindre. Trangen kan stadig vågne ved fest og gamle cues."
     },
     {
       id: "6mo",
       after: 182 * 86400,
       title: "6 måneder",
-      body: "Et halvt år uden snus. De fleste oplever langt færre og svagere trange — og har vænnet sig til en ny hverdag."
+      body: "Et halvt år uden snus. For mange er der langt færre og svagere trange — og en ny hverdag. Fest og gamle cues kan stadig vække vanen."
     },
     {
       id: "1y",
@@ -166,7 +166,8 @@
       symptoms: [
         { name: "Trang og uro", tip: "Det er kemisk, ikke et tegn på at du fejler. Rid bølgen, når den kommer." },
         { name: "Søvn", tip: "Nogle vågner mange gange den første uge. Det letter ofte efter 1–2 uger. Mindre koffein om aftenen kan hjælpe." },
-        { name: "Irritabilitet", tip: "Almindeligt og midlertidigt. Gå en kort tur, eller sig det højt til en, du stoler på." }
+        { name: "Irritabilitet", tip: "Almindeligt og midlertidigt. Gå en kort tur, eller sig det højt til en, du stoler på." },
+        { name: "Puls og blodtryk", tip: "Nikotin hæver pulsen. For mange begynder kroppen at falde til ro i løbet af de første dage — uden at vi kan love et bestemt tal." }
       ],
       honest: "I morgen og i overmorgen er toppen for de fleste. Det er midlertidigt — og det er normalt.",
       peak: false
@@ -212,7 +213,8 @@
       symptoms: [
         { name: "Hjerne-tåge", tip: "For én var den væk efter to uger; for en anden først tydelig bedring efter 90 dage. Variationen er reel." },
         { name: "Trang af vane, ikke behov", tip: "Efter den fysiske abstinens udløses bølger ofte af stress, kedsomhed eller fest. Hvis-så-planen er lavet til det." },
-        { name: "Appetit og vægt", tip: "Ved rygestop er gennemsnitlig vægtøgning omkring 4–5 kg efter 12 måneder. For snus er tallene færre, men risikoen er sandsynlig. Det er ikke alles historie." }
+        { name: "Appetit og vægt", tip: "Ved rygestop er gennemsnitlig vægtøgning omkring 4–5 kg efter 12 måneder. For snus er tallene færre, men risikoen er sandsynlig. Det er ikke alles historie." },
+        { name: "Belønningssystemet", tip: "Hjernen tilpasser sig langsomt uden nikotinens skub. For mange vender almindelige ting langsomt tilbage som rart. Der er ikke en fast dag, hvor «dopamin er nulstillet»." }
       ],
       honest: "Nogle er klarere efter 2 uger, nogle først efter 2–3 måneder. Appen lover ikke dag 14 som en finishlinje.",
       peak: false
@@ -441,7 +443,7 @@
   }
   function defaultState() {
     return {
-      v: 4,
+      v: 5,
       onboarded: false,
       profile: defaultProfile(),
       taper: {
@@ -487,7 +489,9 @@
       toolHelp: {},
       celebrated: {},
       recapSeen: {},
-      activeDelay: null
+      activeDelay: null,
+      lastBackupAt: null,
+      backupRemindedAt: null
     };
   }
 
@@ -583,7 +587,9 @@
     }
     if (!s.profile.leftovers) s.profile.leftovers = s.profile.leftovers || "";
     if (!s.profile.alcoholFirstWeeks) s.profile.alcoholFirstWeeks = s.profile.alcoholFirstWeeks || "";
-    s.v = Math.max(Number(s.v) || 1, 4);
+    if (!s.lastBackupAt) s.lastBackupAt = null;
+    if (!s.backupRemindedAt) s.backupRemindedAt = null;
+    s.v = Math.max(Number(s.v) || 1, 5);
     return s;
   }
 
@@ -1706,6 +1712,14 @@
   function haptic(kind) {
     try {
       if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      /* iOS has no navigator.vibrate — a brief gold glow is the stand-in. */
+      const flashRoot = $("#wave-screen") || $("#tool-screen") || $("#party-screen") || $("#app");
+      if (flashRoot && kind === "done") {
+        flashRoot.classList.remove("h-flash");
+        void flashRoot.offsetWidth;
+        flashRoot.classList.add("h-flash");
+        setTimeout(function () { try { flashRoot.classList.remove("h-flash"); } catch (e) {} }, 750);
+      }
       if (!navigator.vibrate) return;
       if (kind === "start") navigator.vibrate([8, 30, 12]);
       else if (kind === "done") navigator.vibrate([16, 40, 24]);
@@ -2226,6 +2240,16 @@
         "goto-taper",
         "Log",
         ""
+      );
+    }
+    if (backupDue()) {
+      return cta(
+        "Lav en sikkerhedskopi",
+        "Hver 14. dag",
+        "iPhone kan slette data i en web-app, hvis lageret er presset, eller appen ikke åbnes længe. En kopi tager et øjeblik.",
+        "backup-now",
+        "Eksporter",
+        " gold"
       );
     }
     return "";
@@ -3202,6 +3226,225 @@
   }
 
 
+  /* ---------------- v11 helpers ---------------- */
+  function streakStats() {
+    const past = state.streaks || [];
+    const pastDays = past.reduce(function (a, s) { return a + (Number(s.days) || 0); }, 0);
+    const current = (function () {
+      const st = stats();
+      return st.future ? 0 : st.days;
+    })();
+    const longestPast = past.reduce(function (a, s) { return Math.max(a, Number(s.days) || 0); }, 0);
+    const longest = Math.max(longestPast, current);
+    return {
+      current: current,
+      longest: longest,
+      total: pastDays + current,
+      periods: past.length + (current > 0 ? 1 : 0),
+      hadReset: past.length > 0
+    };
+  }
+
+  function streakStatsHtml(opts) {
+    opts = opts || {};
+    const st = streakStats();
+    const day = function (n) {
+      const v = Math.max(0, Math.floor(n));
+      return v;
+    };
+    return (
+      '<div class="streak-box" role="group" aria-label="Dine perioder">' +
+      '<div class="s"><div class="v">' +
+      day(st.current) +
+      '</div><div class="l">nuværende periode</div></div>' +
+      '<div class="s"><div class="v">' +
+      day(st.longest) +
+      '</div><div class="l">længste periode</div></div>' +
+      '<div class="s"><div class="v">' +
+      day(st.total) +
+      '</div><div class="l">i alt snusfri dage</div></div></div>' +
+      (opts.note
+        ? '<p class="hint" style="margin-top:-0.25rem">' + esc(opts.note) + "</p>"
+        : "")
+    );
+  }
+
+  function backupDue() {
+    if (!state.onboarded) return false;
+    const now = Date.now();
+    const fortnight = 14 * 86400000;
+    const quit = state.profile && state.profile.quitAt ? new Date(state.profile.quitAt).getTime() : 0;
+    const last = state.lastBackupAt ? new Date(state.lastBackupAt).getTime() : 0;
+    const reminded = state.backupRemindedAt ? new Date(state.backupRemindedAt).getTime() : 0;
+    const anchor = Math.max(last, isFinite(quit) ? quit : 0);
+    if (anchor && now - anchor < fortnight) return false;
+    if (!anchor && now - (isFinite(quit) ? quit : now) < fortnight) return false;
+    if (reminded && now - reminded < fortnight) return false;
+    /* Don't nag in the first 72 hard hours. */
+    if (quit && now - quit < 3 * 86400000) return false;
+    return true;
+  }
+
+  function markBackedUp() {
+    state.lastBackupAt = new Date().toISOString();
+    state.backupRemindedAt = state.lastBackupAt;
+    save();
+  }
+
+  function dismissBackupRemind() {
+    state.backupRemindedAt = new Date().toISOString();
+    save();
+  }
+
+  function logNfOnce() {
+    state.nicotineFree = state.nicotineFree || {
+      enabled: false, startDate: null, endDate: null, logs: {}, warned: false
+    };
+    state.nicotineFree.logs = state.nicotineFree.logs || {};
+    const iso = todayISO(new Date());
+    state.nicotineFree.logs[iso] = (Number(state.nicotineFree.logs[iso]) || 0) + 1;
+  }
+
+  function stopBreathCoach() {
+    if (window._breathTick) {
+      clearInterval(window._breathTick);
+      window._breathTick = null;
+    }
+  }
+
+  function startBreathCoach(screen) {
+    stopBreathCoach();
+    const reduced = (function () {
+      try {
+        return window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      } catch (e) {
+        return false;
+      }
+    })();
+    if (screen) screen.classList.toggle("calm-still", !!reduced);
+    const lab = $("#calm-breath-lab");
+    if (!lab) return;
+    if (reduced) {
+      lab.innerHTML = 'Træk vejret roligt<small>Du er her</small>';
+      return;
+    }
+    const cycle = [
+      { label: "Indånd", sub: "Gennem næsen", ms: 4000 },
+      { label: "Udånd", sub: "Langsomt", ms: 6000 }
+    ];
+    let i = 0;
+    let until = Date.now() + cycle[0].ms;
+    function paint() {
+      const c = cycle[i];
+      lab.innerHTML = esc(c.label) + "<small>" + esc(c.sub) + "</small>";
+    }
+    paint();
+    window._breathTick = setInterval(function () {
+      if (Date.now() < until) return;
+      i = (i + 1) % cycle.length;
+      until = Date.now() + cycle[i].ms;
+      paint();
+    }, 200);
+  }
+
+  function calmQuoteHtml() {
+    const reasons = reasonsList();
+    const ls = letterState();
+    let html = "";
+    if (reasons.length) {
+      html +=
+        '<blockquote class="calm-quote" data-act="calm-reason" data-i="0">“' +
+        esc(reasons[0].text) +
+        '”<cite>' +
+        (reasons.length > 1 ? "Din grund · tryk for næste" : "Din grund") +
+        "</cite></blockquote>";
+    }
+    if (ls.unlocked && ls.L && ls.L.text) {
+      const t = ls.L.text.trim();
+      const short = t.length > 160 ? t.slice(0, 157) + "…" : t;
+      html += '<p class="calm-letter">“' + esc(short) + '”</p>';
+    }
+    return html;
+  }
+
+  function showCalmOutcome(sos, kind) {
+    const screen = $("#wave-screen");
+    if (!screen) {
+      closeWave();
+      return;
+    }
+    stopBreathCoach();
+    if (waveRaf) cancelAnimationFrame(waveRaf);
+    waveRaf = 0;
+    haptic("done");
+    screen.classList.add("h-flash");
+    const counted = kind === "done" || kind === "okay";
+    const waves = (Number(state.wavesRidden) || 0) + (counted ? 1 : 0);
+    screen._sos = Object.assign({}, sos || {}, { usedWave: counted, skipped: kind === "skip" });
+    screen.innerHTML =
+      '<div class="calm-out">' +
+      '<p class="wave-kicker">' +
+      (kind === "skip" ? "Fair nok" : "Sådan") +
+      "</p>" +
+      "<h2>Hvordan gik det?</h2>" +
+      '<p class="lead">' +
+      (kind === "skip"
+        ? "Du behøver ikke gøre bølgen færdig. Vælg det, der passer — uden karakter."
+        : "Du red den" +
+          (waves ? " — " + waves + " " + plural(waves, "bølge", "bølger") + " i alt" : "") +
+          ". Et ærligt svar er nok.") +
+      "</p>" +
+      '<button type="button" class="btn btn-primary btn-block" data-act="calm-ok">Klarede den</button>' +
+      '<button type="button" class="btn btn-ghost-mint btn-block" data-act="calm-nf">Tog en nikotinfri pose</button>' +
+      '<button type="button" class="btn btn-ghost btn-block" data-act="calm-fell" style="color:#E8A090">Faldt</button>' +
+      '<button type="button" class="btn btn-ghost btn-block" data-act="calm-close">Bare luk</button>' +
+      '<p class="hint mt">Ingen skam. Bare det, der skete.</p></div>';
+  }
+
+  function finishCalm(kind) {
+    const screen = $("#wave-screen");
+    const sos = (screen && screen._sos) || {};
+    const counted = !!sos.usedWave;
+    if (kind === "ok" || kind === "nf") {
+      logCraving({
+        intensity: sos.intensity || 0,
+        trigger: sos.trigger || "",
+        note: sos.note || (kind === "nf" ? "Nikotinfri pose" : ""),
+        resisted: true,
+        usedBreathing: true,
+        usedWave: counted,
+        usedNf: kind === "nf"
+      });
+      if (kind === "nf") logNfOnce();
+      if (counted) state.wavesRidden = (Number(state.wavesRidden) || 0) + (/* logCraving may already increment */ 0);
+      /* logCraving increments wavesRidden if usedWave && resisted — don't double. */
+      save();
+      closeWave();
+      if (state.onboarded) {
+        const tab = $("#tabbar");
+        if (tab) tab.classList.remove("hidden");
+      }
+      toast(
+        kind === "nf"
+          ? "Logget. Nikotinfri poser kan holde vanen i hænderne — midlertidigt, ikke det samme som at være fri."
+          : "Logget. Den gik."
+      );
+      if (view === "home" || view === "craving") render();
+      return;
+    }
+    if (kind === "fell") {
+      closeWave();
+      if (state.onboarded) {
+        const tab = $("#tabbar");
+        if (tab) tab.classList.remove("hidden");
+      }
+      const root = $("#modal-root");
+      openSlip({});
+      if (root) root._sos = sos;
+    }
+  }
+
+
   function renderHome() {
     const el = $("#view-home");
     const s = stats();
@@ -3291,6 +3534,17 @@
       '<div class="sheet">' +
       (showCompassFirst ? compass : "") +
       nowHelpHtml() +
+      (streakStats().hadReset
+        ? '<p class="streak-line">Længste periode ' +
+          Math.floor(streakStats().longest) +
+          " " +
+          plural(Math.floor(streakStats().longest), "dag", "dage") +
+          " · i alt " +
+          Math.floor(streakStats().total) +
+          " snusfri " +
+          plural(Math.floor(streakStats().total), "dag", "dage") +
+          "</p>"
+        : "") +
       moneyCompactHtml(s) +
       context +
       (showCompassFirst ? "" : compass) +
@@ -3971,7 +4225,7 @@
             );
           })
           .join("")
-      : '<p class="empty">Ingen perioder endnu.</p>';
+      : '<div class="card empty-rich"><div class="big">🌿</div><p>Når en periode sluttes — hvis du vælger at starte tælleren forfra — vises den her. Den nuværende står på forsiden. Længste periode og dine samlede snusfri dage bevares.</p></div>';
 
     const slips = (state.slips || [])
       .slice()
@@ -4084,7 +4338,7 @@
         '<div class="hr"></div>' +
         '<p class="fineprint">Snusfri er ikke medicinsk rådgivning og erstatter ikke samtale med en læge eller anden sundhedsfaglig. Milepælene er vejledende og formuleret forsigtigt — alle reagerer forskelligt.</p>' +
         '<p class="fineprint mt">Som web-app kan Snusfri ikke lægge en rigtig widget på iOS-hjemmeskærmen — det kræver en native skal. Forsiden er lavet som et kompakt overblik, og beskederne i appen viser dage og sparede kroner, når du åbner den.</p>' +
-        '<p class="fineprint mt">Version 1.3 · november 2026 · Service worker v10. Lavet til at ligge på din hjemmeskærm.</p></div>'
+        '<p class="fineprint mt">Version 1.4 · november 2026 · Service worker v11. Lavet til at ligge på din hjemmeskærm.</p></div>'
     );
   }
 
@@ -4362,7 +4616,14 @@
     el.innerHTML = subWrap(
       "Data & sikkerhedskopi",
       '<div class="card"><p>Al data ligger kun på denne enhed. Historik, stopdato og sparede kroner skal overleve opdateringer. Tomme dage er nul poser, og du kan rette gamle dage.</p>' +
-        '<button class="btn btn-primary btn-block mt" data-act="export">Eksporter JSON</button>' +
+        '<p class="backup-note mt"><strong>' +
+        (state.lastBackupAt
+          ? "Sidste kopi: " + esc(fmtDateTime(state.lastBackupAt)) + "."
+          : "Ingen kopi taget herfra endnu.") +
+        "</strong></p></div>" +
+        '<div class="callout gold mt"><strong>Om iPhone og web-apps.</strong> iOS kan slette data for en app, der er føjet til hjemmeskærmen, hvis telefonen mangler lagerplads, eller hvis appen ikke åbnes i længere tid. Det er et kendt vilkår ved web-apps — ikke en fejl i Snusfri. En JSON-kopi i Filer, iCloud eller på en computer er den ro, vi kan give. Gerne hver anden uge.</div>' +
+        '<div class="card mt">' +
+        '<button class="btn btn-primary btn-block" data-act="export">Eksporter JSON — fil eller dele-ark</button>' +
         '<button class="btn btn-ghost btn-block mt" data-act="import">Importer en kopi</button>' +
         (snap
           ? '<button class="btn btn-ghost btn-block mt" data-act="restore-snapshot">Gendan kopi fra før sidste opgradering</button>'
@@ -4552,6 +4813,7 @@
       pts.push(x.toFixed(1) + "," + y.toFixed(1));
     }
     if (!pts.length) return "";
+    if (pts.length === 1) return "M " + pts[0];
     return "M " + pts[0] + " L " + pts.slice(1).join(" ");
   }
 
@@ -4569,9 +4831,11 @@
     $("#tabbar").classList.add("hidden");
     $("#fab-sos").classList.add("hidden");
     screen.innerHTML =
-      '<p class="wave-kicker">Trang-surfer</p>' +
+      '<p class="wave-kicker">Trangen topper og falder</p>' +
       '<h2 class="wave-title" id="wave-title">Trangen er en gæst</h2>' +
-      '<p class="wave-sub" id="wave-sub">Den går igen. Den værste del varer oftest 3–4 minutter.</p>' +
+      '<p class="wave-sub" id="wave-sub">Omkring 3–4 minutter. Du rider den — du vinder den ikke i ét hug.</p>' +
+      '<div class="calm-breath-wrap"><div class="calm-breath" id="calm-breath" aria-hidden="true"></div>' +
+      '<div class="calm-breath-lab" id="calm-breath-lab">Indånd</div></div>' +
       '<div class="wave-stage"><svg viewBox="0 0 360 180" aria-hidden="true">' +
       '<path id="wave-dim" fill="none" stroke="rgba(232,196,122,0.22)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" d="' +
       buildWavePath(360, 180, 1, 100) +
@@ -4580,7 +4844,12 @@
       '<circle id="wave-orb" r="8" fill="#F0D9A0" stroke="#0A110E" stroke-width="2">' +
       '<animate attributeName="r" values="7;9;7" dur="2.4s" repeatCount="indefinite"></animate></circle>' +
       "</svg></div>" +
-      '<div class="wave-time" id="wave-time">3:30</div>' +
+      '<div class="wave-time" id="wave-time">' +
+      (function () {
+        const T = opts.ms || WAVE_MS;
+        return Math.floor(T / 60000) + ":" + pad(Math.floor((T % 60000) / 1000));
+      })() +
+      "</div>" +
       '<p class="wave-count" id="wave-count">' +
       (waves
         ? "Du har allerede redet " + waves + " " + plural(waves, "bølge", "bølger") + "."
@@ -4593,23 +4862,12 @@
           esc(plan.thenText) +
           "</p></div>"
         : "") +
-      (r0 ? '<p class="wave-sub" style="margin-top:0.5rem">“' + esc(r0.text) + '”</p>' : "") +
-      '<div class="wave-tips">' +
-      WAVE_TIPS.map(function (t) {
-        return (
-          '<button type="button" class="chip" data-act="wave-tip" data-id="' +
-          t.id +
-          '">' +
-          esc(t.label) +
-          "</button>"
-        );
-      }).join("") +
-      "</div>" +
+      calmQuoteHtml() +
       '<div class="wave-actions">' +
       '<button class="btn btn-primary btn-block btn-wrap" data-act="wave-done">Jeg er okay nu</button>' +
-      '<button class="btn btn-ghost-mint btn-block" data-act="wave-to-breath">Hellere 2 min. åndedræt</button>' +
-      '<button class="btn btn-ghost btn-block" data-act="wave-skip">Spring over</button>' +
+      '<button class="btn btn-ghost btn-block" data-act="wave-skip">Luk — jeg vender tilbage</button>' +
       "</div>";
+    startBreathCoach(screen);
 
     const TOTAL = opts.ms || WAVE_MS;
     const offset = Math.max(0, Math.min(0.97, Number(opts.offset) || 0));
@@ -4681,58 +4939,25 @@
   }
 
   function closeWave() {
+    stopBreathCoach();
     const screen = $("#wave-screen");
     if (screen) {
       screen.classList.add("hidden");
       screen.innerHTML = "";
+      screen._sos = null;
     }
     if (waveRaf) cancelAnimationFrame(waveRaf);
     waveStop = null;
+    if (state.onboarded) {
+      const tab = $("#tabbar");
+      if (tab) tab.classList.remove("hidden");
+    }
   }
 
   function endWave(sos, kind) {
-    closeWave();
-    const counted = kind === "done" || kind === "okay";
-    if (counted) haptic("done");
-    const waves = (Number(state.wavesRidden) || 0) + (counted ? 1 : 0);
-    const ints = [];
-    for (let i = 1; i <= 10; i++) {
-      ints.push(
-        '<button type="button" data-act="chip" data-group="intensityAfter" data-val="' +
-          i +
-          '">' +
-          i +
-          "</button>"
-      );
-    }
-    openSheet(
-      "<h2>" +
-        (kind === "skip" ? "Fair nok" : "Sådan. Den gik.") +
-        "</h2>" +
-        '<p class="sheet-lead">' +
-        (kind === "skip"
-          ? "Du behøver ikke gøre den færdig. Hvordan har trangen det nu?"
-          : "Du red bølgen. " +
-            (waves
-              ? "Du har nu redet " + waves + " " + plural(waves, "bølge", "bølger") + "."
-              : "Den gik.") +
-            " Hvordan har den det nu?") +
-        "</p>" +
-        '<div class="field"><label>Styrke nu</label><div class="intensity" id="wave-int-after">' +
-        ints.join("") +
-        "</div></div>" +
-        '<button class="btn btn-primary btn-block" data-act="sos-log" data-resisted="1" data-wave="' +
-        (counted ? "1" : "0") +
-        '">Log som overvundet</button>' +
-        '<button class="btn btn-ghost btn-block mt" data-act="start-breath">Stadig svært — 2 min. åndedræt</button>' +
-        '<button class="btn btn-ghost btn-block mt" data-act="slip" style="color:var(--coral-soft)">Jeg gav efter</button>'
-    );
-    const root = $("#modal-root");
-    root._sos = Object.assign({}, sos, { usedWave: counted, skipped: kind === "skip" });
-    if (state.onboarded) {
-      $("#tabbar").classList.remove("hidden");
-    }
+    showCalmOutcome(sos, kind);
   }
+
 
   function openBareEn() {
     const sos = (function () { try { return readSos(); } catch (e) { return {}; } })();
@@ -5170,7 +5395,8 @@
     })();
     openSheet(
       "<h2>Det er okay</h2>" +
-        '<p class="aftersyn-lead">Du tog en pose. Det er et slip, ikke et afsluttet kapitel. Din historik bliver. Vi starter igen nu.</p>' +
+        '<p class="aftersyn-lead">Det er et slip, ikke et afsluttet kapitel. Historikken står — uanset hvad du vælger herunder.</p>' +
+        streakStatsHtml() +
         '<div class="field"><label>Hvor mange poser? (valgfrit)</label>' +
         '<div class="stepper"><button type="button" data-act="step" data-dir="-1" data-target="slip-n" data-amt="1">−</button>' +
         '<input id="slip-n" inputmode="decimal" value="1">' +
@@ -5186,9 +5412,10 @@
         '<div class="field"><label>Hvilken følelse?</label>' +
         '<input id="slip-feeling" class="input" maxlength="80" placeholder="Skuffelse, fest, kedsomhed, stress…"></div>' +
         '<div class="field"><label>Note (valgfri)</label><textarea id="slip-note" class="input" maxlength="240" placeholder="Hvad skete der?"></textarea></div>' +
-        '<button class="btn btn-primary btn-block btn-wrap" data-act="slip-save" data-reset="0">Log slip og fortsæt — start igen nu</button>' +
-        '<button class="btn btn-ghost btn-block mt btn-wrap" data-act="slip-save" data-reset="1">Start tælleren forfra (historikken gemmes)</button>' +
-        '<button class="btn btn-ghost btn-block mt" data-act="close-modal">Annuller</button>'
+        '<div class="slip-actions"><p class="field"><label>Hvad skal der ske med tælleren?</label></p>' +
+        '<button class="btn btn-primary btn-block btn-stack" data-act="slip-save" data-reset="0"><span class="btn-title">Fortsæt</span><span class="btn-sub">Tælleren bliver stående. Poser i dag trækkes fra det sparede. Længste periode og dine samlede dage vises stadig.</span></button>' +
+        '<button class="btn btn-ghost btn-block btn-stack mt" data-act="slip-save" data-reset="1"><span class="btn-title">Start forfra</span><span class="btn-sub">Tælleren går til nul. Længste periode og al historik gemmes — ikke et slettet kapitel.</span></button>' +
+        '<button class="btn btn-ghost btn-block mt" data-act="close-modal">Annuller</button></div>'
     );
     const root = $("#modal-root");
     root._sos = sos;
@@ -5257,13 +5484,18 @@
       TRIGGERS.indexOf(triggerGuess) >= 0 ? triggerGuess : "Fest"
     );
     openSheet(
-      "<h2>Hvad tager du med?</h2>" +
-        '<p class="aftersyn-lead">Ingen grund til at begynde på fuld tid igen. Streaken er én måling, ikke din værdi. Historikken står. Vi starter igen nu — ikke i morgen.' +
+      "<h2>Hvad lærte jeg?</h2>" +
+        streakStatsHtml({
+          note: reset
+            ? "Ny startdato er sat. Længste periode og historikken står."
+            : "Tælleren fortsætter. Længste periode og dine samlede dage står."
+        }) +
+        '<p class="aftersyn-lead">Ingen grund til at begynde på fuld tid igen. Streaken er én måling, ikke din værdi. Et kort svar her bliver til en hvis-så-plan — til næste gang, ikke som en karakter.' +
         ((state.slips || []).filter(function (x) { return todayISO(x.at) === todayISO(slip.at); }).length > 1
           ? " Det er stadig i dag."
           : "") +
         "</p>" +
-        '<div class="field"><label>Hvad vil du gøre anderledes næste gang?</label>' +
+        '<div class="field"><label>Hvad lærte jeg — og hvad gør jeg næste gang?</label>' +
         '<textarea id="slip-next" class="input" maxlength="240" style="min-height:5rem" placeholder="Fx: Hvis jeg er til fest og bliver budt, så siger jeg nej tak og drikker et glas vand.">' +
         esc(tmpl.ifText + " " + tmpl.thenText) +
         "</textarea></div>" +
@@ -5274,12 +5506,7 @@
         '">Gem og lav en hvis-så-plan</button>' +
         '<button class="btn btn-ghost btn-block mt" data-act="aftersyn-skip" data-id="' +
         esc(slip.id) +
-        '">Luk — jeg er i gang igen</button>' +
-        '<p class="hint mt">' +
-        (reset
-          ? "Ny startdato er sat. Den forrige periode ligger i historikken."
-          : "Din snusfri-tid fortsætter. Videre herfra.") +
-        "</p>"
+        '">Luk — videre herfra</button>'
     );
   }
 
@@ -5461,6 +5688,8 @@
         const file = new File([blob], name, { type: "application/json" });
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: "Snusfri sikkerhedskopi" });
+          markBackedUp();
+          toast("Sikkerhedskopi delt.");
           return;
         }
       }
@@ -5476,6 +5705,7 @@
       URL.revokeObjectURL(a.href);
       a.remove();
     }, 500);
+    markBackedUp();
     toast("Sikkerhedskopi klar.");
   }
 
@@ -5537,7 +5767,7 @@
       morePage = null;
       render();
     },
-    sos: () => openSOS(),
+    sos: () => { closeModal(); closeToolScreen(); closePartyScreen(); startWave(); },
     "sos-tips": () => {
       const s = readSos();
       openTips();
@@ -5838,6 +6068,28 @@
       save();
       toast("Vægt gemt. Kun for dig — det her er ikke et slankeprogram.");
     },
+    "calm-close": () => { closeWave(); },
+    "calm-ok": () => finishCalm("ok"),
+    "calm-nf": () => finishCalm("nf"),
+    "calm-fell": () => finishCalm("fell"),
+    "calm-reason": (el) => {
+      const reasons = reasonsList();
+      if (reasons.length < 2) return;
+      const i = (Number(el.dataset.i) || 0) + 1;
+      const n = i % reasons.length;
+      el.dataset.i = String(n);
+      el.innerHTML = "“" + esc(reasons[n].text) + "”<cite>Din grund · tryk for næste</cite>";
+    },
+    "dismiss-backup": () => {
+      dismissBackupRemind();
+      closeModal();
+      if (view === "home") renderHome();
+    },
+    "backup-now": () => {
+      dismissBackupRemind();
+      closeModal();
+      exportData();
+    },
     "goto-insights": () => { view = "more"; morePage = "insights"; closeModal(); closeToolScreen(); render(); },
     "goto-recap": () => { view = "more"; morePage = "recap"; closeModal(); render(); },
     "goto-letter": () => { view = "more"; morePage = "letter"; closeModal(); render(); },
@@ -6020,7 +6272,7 @@
       if (slip) slip.nextTime = next;
       if (next) {
         const trigger = el.dataset.trigger || "Fest";
-        const parts = next.split(/så/i);
+        const parts = next.split(/\bså\b/i);
         const ifText = (parts[0] || "").trim() || templateFor(trigger).ifText;
         const thenText = (parts[1] || next).trim() || templateFor(trigger).thenText;
         const existing = ifThenFor(trigger);
@@ -6047,10 +6299,8 @@
     },
     "aftersyn-skip": () => {
       closeModal();
-      morePage = "history";
-      view = "more";
-      render();
-      toast("Vi starter igen nu.");
+      toast("Videre herfra.");
+      if (view === "home") renderHome();
     },
     "sleep-save": () => {
       const n = parseNum(($("#sleep-wakes") || {}).value);
@@ -6454,6 +6704,8 @@
       if (dayCount >= c.days) state.celebrated[c.id] = new Date(quitAt.getTime() + c.days * 86400000).toISOString();
     });
     if (opts.theme) applyTheme();
+    state.lastBackupAt = new Date(now).toISOString();
+    state.backupRemindedAt = state.lastBackupAt;
     save();
     view = "home";
     morePage = null;
@@ -6585,6 +6837,11 @@
     shareStatus: shareStatus,
     haptic: haptic,
     openWeekendReview: openWeekendReview,
+    streakStats: streakStats,
+    startWave: startWave,
+    showCalmOutcome: showCalmOutcome,
+    finishCalm: finishCalm,
+    backupDue: backupDue,
     personalInsights: personalInsights,
     moneyConcrete: moneyConcrete,
     applyTheme: applyTheme,

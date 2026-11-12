@@ -58,6 +58,8 @@ Som web-app kan Snusfri ikke lægge en rigtig widget på iOS-hjemmeskærmen — 
 
 Forsiden viser en skov, der vokser med dine snusfri dage. Under **Mere** ligger **Indsigt** (mønstre i dine egne log, med forbehold for små tal), **Ugens overblik**, og et valgfrit **brev til dig selv**, skrevet ved start og låst til dag 30. Penge vises også som konkrete ting (en kop kaffe, en biografbillet). Trang-fanen har en værktøjskasse: 5-4-3-2-1, koldt vand, mini-træning, «vent 10 minutter», og en rangering af det, du selv markerede som hjælpsomt. Udseende kan følge systemet eller sættes til lyst eller mørkt — fest-mode, trang-surfer og onboarding bliver ved med at være mørke.
 
+Fra forsiden åbner ét tryk på SOS en rolig fuldskærm: vejledt vejrtrækning, bølgen der topper og falder (omkring 3–4 minutter), dine egne grunde — og bagefter et ærligt log: klarede den, tog en nikotinfri pose, eller faldt. Ved et slip vælger du **Fortsæt** (tælleren bliver) eller **Start forfra**; længste periode og dine samlede snusfri dage står, og «hvad lærte jeg» kan blive til en hvis-så-plan. Under **Data** kan du eksportere en JSON-kopi (fil eller dele-ark) og få en stille påmindelse hver 14. dag: iPhone kan slette data i en web-app, hvis lageret er presset, eller appen ikke åbnes længe. Helbredsmilepæle er formuleret med «for mange», uden opfundne tal og uden en fast dag hvor «dopamin er nulstillet».
+
 Milepælene og kompasset er vejledende, ikke medicinsk rådgivning. Ved alvorlig nedtrykthed, tal med en læge.
 
-Version 1.3 · november 2026 · service worker v10.
+Version 1.4 · november 2026 · service worker v11.
