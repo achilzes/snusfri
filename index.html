@@ -2,7 +2,26 @@
 <html lang="da">
 <head>
   <meta charset="utf-8">
-  <style>html,body{background:#0A110E;margin:0;}</style>
+  <style id="boot-bg">html,body{background:#0A110E;margin:0;}</style>
+  <script>
+  (function () {
+    try {
+      var theme = "dark";
+      var raw = localStorage.getItem("snusfri.v1");
+      if (raw) {
+        var st = JSON.parse(raw);
+        if (st.theme === "light") theme = "light";
+        else if (st.theme === "dark") theme = "dark";
+        else if (window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches) theme = "light";
+      }
+      document.documentElement.setAttribute("data-theme", theme);
+      if (theme === "light") {
+        var bg = document.getElementById("boot-bg");
+        if (bg) bg.textContent = "html,body{background:#F0EBE0;margin:0;}";
+      }
+    } catch (e) {}
+  })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <script>
   /* Pin the shell to the physical screen in iOS standalone.
@@ -65,7 +84,7 @@
   })();
   </script>
   <meta name="theme-color" content="#0A110E">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="dark light">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -87,7 +106,12 @@
   <title>Snusfri</title>
 </head>
 <body>
-  <div id="boot" class="boot-splash" role="status">Snusfri</div>
+  <div id="boot" class="boot-splash" role="status">
+    <div class="boot-inner">
+      <img src="icons/icon-180.png" width="180" height="180" alt="">
+      <span class="boot-name">Snusfri</span>
+    </div>
+  </div>
   <div id="app">
     <div id="onboarding" class="onboarding hidden" aria-live="polite"></div>
 
@@ -129,6 +153,7 @@
     <div id="breath-screen" class="breath-screen hidden" role="dialog" aria-modal="true" aria-label="Vejrtrækning"></div>
     <div id="wave-screen" class="wave-screen hidden" role="dialog" aria-modal="true" aria-label="Trang-surfer"></div>
     <div id="party-screen" class="party-screen hidden" role="dialog" aria-modal="true" aria-label="Fest-mode"></div>
+    <div id="tool-screen" class="tool-screen hidden" role="dialog" aria-modal="true" aria-label="Værktøj"></div>
     <div id="modal-root" class="modal-root"></div>
     <div id="toast-root" aria-live="polite"></div>
   </div>

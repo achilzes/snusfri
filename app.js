@@ -441,7 +441,7 @@
   }
   function defaultState() {
     return {
-      v: 3,
+      v: 4,
       onboarded: false,
       profile: defaultProfile(),
       taper: {
@@ -481,7 +481,13 @@
       notifyPrefs: { enabled: false, earlyIntense: true, times: [] },
       dayLog: {},
       sleepLog: {},
-      weightLog: {}
+      weightLog: {},
+      theme: "system",
+      letter: { text: "", writtenAt: null, openedAt: null },
+      toolHelp: {},
+      celebrated: {},
+      recapSeen: {},
+      activeDelay: null
     };
   }
 
@@ -555,6 +561,17 @@
     if (!s.dayLog || typeof s.dayLog !== "object") s.dayLog = {};
     if (!s.sleepLog || typeof s.sleepLog !== "object") s.sleepLog = {};
     if (!s.weightLog || typeof s.weightLog !== "object") s.weightLog = {};
+    if (!s.theme) s.theme = "system";
+    if (!s.letter || typeof s.letter !== "object") s.letter = { text: "", writtenAt: null, openedAt: null };
+    else {
+      s.letter.text = s.letter.text || "";
+      s.letter.writtenAt = s.letter.writtenAt || null;
+      s.letter.openedAt = s.letter.openedAt || null;
+    }
+    if (!s.toolHelp || typeof s.toolHelp !== "object") s.toolHelp = {};
+    if (!s.celebrated || typeof s.celebrated !== "object") s.celebrated = {};
+    if (!s.recapSeen || typeof s.recapSeen !== "object") s.recapSeen = {};
+    if (s.activeDelay === undefined) s.activeDelay = null;
     if (s.taper) {
       if (!s.taper.stopDate) s.taper.stopDate = s.taper.stopDate || null;
       if (s.taper.strengthMg == null) s.taper.strengthMg = (s.profile && s.profile.nicotineMg) || 0;
@@ -566,7 +583,7 @@
     }
     if (!s.profile.leftovers) s.profile.leftovers = s.profile.leftovers || "";
     if (!s.profile.alcoholFirstWeeks) s.profile.alcoholFirstWeeks = s.profile.alcoholFirstWeeks || "";
-    s.v = Math.max(Number(s.v) || 1, 3);
+    s.v = Math.max(Number(s.v) || 1, 4);
     return s;
   }
 
@@ -1254,7 +1271,8 @@
       leftovers: p.leftovers || "",
       alcoholFirstWeeks: p.alcoholFirstWeeks || "little",
       buddyName: (state.buddy && state.buddy.name) || "",
-      buddyPhone: (state.buddy && state.buddy.phone) || ""
+      buddyPhone: (state.buddy && state.buddy.phone) || "",
+      letter: (state.letter && state.letter.text) || ""
     };
     (state.ifThenPlans || []).forEach(function (pl) {
       obDraft.planDrafts[pl.trigger] = { ifText: pl.ifText, thenText: pl.thenText };
@@ -1300,6 +1318,8 @@
     if (alc) d.alcoholFirstWeeks = alc.dataset.alc;
     const bn = $("#ob-buddy-name");
     if (bn) d.buddyName = bn.value.trim();
+    const lt = $("#ob-letter");
+    if (lt) d.letter = lt.value;
     const bp = $("#ob-buddy-phone");
     if (bp) d.buddyPhone = bp.value.trim();
     (d.pickedTriggers || []).forEach(function (t) {
@@ -1340,7 +1360,7 @@
       body =
         '<div class="ob-mark"><img src="icons/icon-192.png" alt="Snusfri"></div>' +
         '<h1 class="ob-title">Klar til at<br>være fri?</h1>' +
-        '<p class="ob-lead">Snusfri hjælper dig med at følge tiden, pengene og helbredet — og holder dig i hånden, når trangen kommer. Først laver vi en plan. Dine data bliver kun på denne enhed. Ingen konto.</p>' +
+        '<p class="ob-lead">Snusfri hjælper dig med at følge tiden, pengene og helbredet — og holder dig i hånden, når trangen kommer. Skoven i billedet vokser med dine dage. Først laver vi en plan. Dine data bliver kun på denne enhed. Ingen konto.</p>' +
         '<div class="ob-actions">' +
         '<button class="btn btn-primary btn-block" data-act="ob-next">Kom i gang</button>' +
         '<button class="ob-skip" data-act="ob-demo">Prøv med et eksempel</button>' +
@@ -1557,6 +1577,11 @@
         esc(fmtNum(r.pouchesPerDay * 365, 0)) +
         " poser</strong>.</p></div>" +
         '<div class="card mt"><div class="card-kicker mint">Stoplinien</div><p>Hjælp er normalt. Ring <strong>80 31 31 31</strong> (man–tors 10–20, fre 10–16), eller sms «Nikotinfri» til 1231.</p></div>' +
+        '<div class="field mt-2"><label for="ob-letter">Et brev til dig selv om 30 dage (valgfrit)</label>' +
+        '<textarea id="ob-letter" class="input" maxlength="800" style="min-height:5.5rem" placeholder="Hvad vil du gerne huske, når der er gået en måned?">' +
+        esc(d.letter || "") +
+        "</textarea>" +
+        '<p class="hint">Det låses, indtil dag 30. Så læser du det, du mente, da du startede.</p></div>' +
         '<div class="ob-actions">' +
         '<button class="btn btn-primary btn-block" data-act="ob-finish">Start Snusfri</button>' +
         '<button class="ob-skip" data-act="ob-back">Tilbage</button>' +
@@ -1619,6 +1644,13 @@
     if (plans.length) state.ifThenPlans = (state.ifThenPlans || []).concat(plans);
     if (d.buddyName || d.buddyPhone) {
       state.buddy = { name: d.buddyName || "", phone: d.buddyPhone || "", note: "" };
+    }
+    if ((d.letter || "").trim()) {
+      state.letter = {
+        text: d.letter.trim(),
+        writtenAt: new Date().toISOString(),
+        openedAt: null
+      };
     }
     if (d.quitMode === "taper") {
       const startP = d.habitMode === "pouches" ? d.pouchesPerDay : (d.cansPerWeek / 7) * d.pouchesPerCan;
@@ -1834,7 +1866,9 @@
         plural(Math.floor(finiteNum(s.pouches)), "pose", "poser") +
         " · " +
         esc(fmtNic(s.nicotine)) +
-        "</div></button>" +
+        "</div>" +
+        moneyConcreteHtml(s.money) +
+        "</button>" +
         (homeMoneyOpen
           ? '<div class="money-details" id="money-details">' +
             '<div class="mini-stats">' +
@@ -1862,7 +1896,8 @@
             '<div class="mini-stat lav" style="grid-column:1/-1"><div class="v">' +
             esc(fmtTimeWon(s.minutes)) +
             '</div><div class="l">tid vundet · anslået 5 min. pr. pose</div></div>' +
-            "</div></div>"
+            "</div>" +
+            "</div>"
           : "") +
         "</div>"
     );
@@ -2025,6 +2060,56 @@
       );
     }
 
+    if (state.activeDelay && state.activeDelay.end) {
+      const endAt = new Date(state.activeDelay.end).getTime();
+      if (isFinite(endAt) && !state.activeDelay.done && Date.now() < endAt) {
+        return cta(
+          "Ventetiden kører stadig",
+          "10 minutter",
+          "Timere kører, mens appen er åben. Du beslutter, når tiden er gået.",
+          "tool-delay",
+          "Åbn uret",
+          " gold"
+        );
+      }
+      if (isFinite(endAt) && (state.activeDelay.done || Date.now() >= endAt)) {
+        return cta(
+          "De 10 minutter er gået",
+          "Vent",
+          "Hvordan er trangen nu?",
+          "tool-delay",
+          "Se",
+          " mint"
+        );
+      }
+    }
+    const ls = letterState();
+    if (ls.pending) {
+      return cta(
+        "Brevet til dig er klar",
+        "Dag 30",
+        "Du skrev det, da du startede. Det er dine egne ord.",
+        "goto-letter",
+        "Åbn brevet",
+        " gold"
+      );
+    }
+    const dayN = new Date().getDay();
+    const rk = isoWeekKey(new Date());
+    if ((dayN === 0 || dayN === 1) && !(state.recapSeen && state.recapSeen[rk])) {
+      const rd = recapData();
+      if (rd.cravings + rd.checkins + rd.slips > 0) {
+        return cta(
+          "Ugens overblik ligger klar",
+          "Ugen",
+          "Dage, penge og det, dine log viser — med forbehold for små tal.",
+          "goto-recap",
+          "Se",
+          " mint"
+        );
+      }
+    }
+
     if (state.activeParty && !state.activeParty.endedAt) {
       const party = upcomingParty();
       return cta(
@@ -2164,6 +2249,959 @@
   }
 
 
+  /* ---------------- v10 helpers ---------------- */
+  let DELAY_MS = 10 * 60 * 1000;
+  let toolTimer = null;
+  let toolRaf = 0;
+
+  const CONCRETE_THINGS = [
+    { name: "kop kaffe", plural: "kopper kaffe", price: 45 },
+    { name: "biografbillet", plural: "biografbilletter", price: 130 },
+    { name: "måned med streaming", plural: "måneder med streaming", price: 129 },
+    { name: "middag ude", plural: "middage ude", price: 225 },
+    { name: "buket blomster", plural: "buketter", price: 99 },
+    { name: "par gode løbesko", plural: "par løbesko", price: 1200 },
+    { name: "weekendtur", plural: "weekendture", price: 1800 },
+    { name: "vinterjakke", plural: "vinterjakker", price: 1500 },
+    { name: "cykel (en fin, brugt)", plural: "cykler", price: 3500 },
+    { name: "computer", plural: "computere", price: 8000 }
+  ];
+
+  const TOOLS = [
+    { id: "wave", label: "Rid bølgen", sub: "3–4 min.", act: "start-wave" },
+    { id: "ground", label: "5-4-3-2-1", sub: "Jordforbindelse · 30 sek.", act: "tool-ground" },
+    { id: "cold", label: "Koldt vand", sub: "30 sekunder", act: "tool-cold" },
+    { id: "move", label: "Mini-træning", sub: "30 sekunder", act: "tool-move" },
+    { id: "delay", label: "Vent 10 minutter", sub: "Beslutningen kan vente", act: "tool-delay" },
+    { id: "breath", label: "Åndedræt", sub: "2 minutter", act: "start-breath" }
+  ];
+
+  const GROUND_STEPS = [
+    { n: "5", title: "Se fem ting", body: "Se dig omkring. Navngiv fem ting, du kan se — stille, for dig selv." },
+    { n: "4", title: "Fire lyde", body: "Lyt. Fire lyde, tæt på eller langt væk." },
+    { n: "3", title: "Tre ting, du mærker", body: "Gulvet under fødderne, tøjet, luften. Tre konkrete fornemmelser." },
+    { n: "2", title: "To dufte", body: "To dufte — eller bare luften, som den er." },
+    { n: "1", title: "Én smag", body: "Én smag, eller bare at mærke tungen i munden. Du er her." }
+  ];
+
+  function resolvedTheme() {
+    const t = (state && state.theme) || "system";
+    if (t === "light") return "light";
+    if (t === "dark") return "dark";
+    try {
+      if (window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches) return "light";
+    } catch (e) {}
+    return "dark";
+  }
+
+  function applyTheme() {
+    const r = resolvedTheme();
+    document.documentElement.setAttribute("data-theme", r);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", r === "light" ? "#F0EBE0" : "#0A110E");
+    const bar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (bar) bar.setAttribute("content", r === "light" ? "default" : "black-translucent");
+    try {
+      document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
+        m.setAttribute("content", r === "light" ? "#F0EBE0" : "#0A110E");
+      });
+    } catch (e) {}
+  }
+
+  function moneyConcrete(kr) {
+    kr = finiteNum(kr, 0);
+    if (kr < 30) return "";
+    const fits = CONCRETE_THINGS.filter(function (t) {
+      const n = Math.floor(kr / t.price);
+      return n >= 1 && n <= 24;
+    });
+    if (!fits.length) {
+      const big = CONCRETE_THINGS.filter(function (t) { return t.price <= kr; }).pop();
+      if (!big) return "";
+      return "Det er omtrent " + (big.name.indexOf("en ") === 0 ? big.name : "en " + big.name) + " — cirka, efter danske priser.";
+    }
+    fits.sort(function (a, b) { return b.price - a.price; });
+    const a = fits[0];
+    const na = Math.floor(kr / a.price);
+    const la = na === 1 ? (a.name.indexOf("par") === 0 || a.name.indexOf("måned") === 0 ? a.name : a.name) : a.plural;
+    const art = a.name.indexOf("par ") === 0 ? "et " : "en ";
+    const first = na === 1 ? (art + a.name) : (na + " " + a.plural);
+    let second = "";
+    if (fits.length > 1 && fits[1].name !== a.name) {
+      const b = fits[Math.min(1, fits.length - 1)];
+      if (b && b.price !== a.price) {
+        const nb = Math.floor(kr / b.price);
+        if (nb >= 1) second = " — eller " + (nb === 1 ? "en " + b.name : nb + " " + b.plural);
+      }
+    }
+    return "Det er omtrent " + first + second + ". Cirka, efter almindelige danske priser.";
+  }
+
+  function moneyConcreteHtml(kr) {
+    const t = moneyConcrete(kr);
+    if (!t) return "";
+    return '<p class="money-concrete">' + esc(t) + "</p>";
+  }
+
+  function pinePath(cx, baseY, h, w) {
+    const top = baseY - h;
+    const mid = baseY - h * 0.42;
+    const mid2 = baseY - h * 0.18;
+    const w1 = w * 0.42;
+    const w2 = w * 0.7;
+    const w3 = w;
+    return (
+      "M " + cx + " " + top +
+      " L " + (cx - w1) + " " + mid +
+      " L " + (cx - w1 * 0.35) + " " + mid +
+      " L " + (cx - w2) + " " + mid2 +
+      " L " + (cx - w2 * 0.32) + " " + mid2 +
+      " L " + (cx - w3) + " " + baseY +
+      " L " + (cx + w3) + " " + baseY +
+      " L " + (cx + w2 * 0.32) + " " + mid2 +
+      " L " + (cx + w2) + " " + mid2 +
+      " L " + (cx + w1 * 0.35) + " " + mid +
+      " L " + (cx + w1) + " " + mid +
+      " Z"
+    );
+  }
+
+  function journeyTrees(days, opts) {
+    opts = opts || {};
+    const wide = !!opts.wide;
+    const W = wide ? 640 : 390;
+    const H = wide ? 200 : 200;
+    const baseY = H - 2;
+    /* Side-framed pines. Centre channel left open for the counter. */
+    const specs = wide
+      ? [
+          { x: 0.06, max: 0.92, at: 0, w: 0.055 },
+          { x: 0.14, max: 0.78, at: 1, w: 0.05 },
+          { x: 0.22, max: 0.64, at: 3, w: 0.042 },
+          { x: 0.30, max: 0.52, at: 7, w: 0.036 },
+          { x: 0.38, max: 0.38, at: 14, w: 0.028 },
+          { x: 0.62, max: 0.40, at: 14, w: 0.028 },
+          { x: 0.70, max: 0.55, at: 7, w: 0.036 },
+          { x: 0.78, max: 0.70, at: 3, w: 0.044 },
+          { x: 0.86, max: 0.84, at: 1, w: 0.05 },
+          { x: 0.94, max: 0.95, at: 0, w: 0.058 }
+        ]
+      : [
+          { x: 0.05, max: 0.95, at: 0, w: 0.07 },
+          { x: 0.14, max: 0.78, at: 1, w: 0.058 },
+          { x: 0.23, max: 0.58, at: 3, w: 0.048 },
+          { x: 0.77, max: 0.58, at: 3, w: 0.048 },
+          { x: 0.86, max: 0.82, at: 1, w: 0.06 },
+          { x: 0.95, max: 0.98, at: 0, w: 0.072 }
+        ];
+    const later = [
+      { x: 0.32, max: 0.42, at: 28, w: 0.032, side: true },
+      { x: 0.68, max: 0.44, at: 28, w: 0.032, side: true },
+      { x: 0.10, max: 0.50, at: 60, w: 0.04, side: false },
+      { x: 0.90, max: 0.55, at: 60, w: 0.04, side: false },
+      { x: 0.18, max: 0.36, at: 100, w: 0.03, side: false },
+      { x: 0.82, max: 0.38, at: 100, w: 0.03, side: false }
+    ];
+    const all = specs.concat(wide ? later : later.filter(function (t) { return t.at <= 60; }));
+    let paths = "";
+    all.forEach(function (t, i) {
+      const growFor = Math.max(10, t.at + 18);
+      const raw = days < t.at ? 0 : Math.min(1, (days - t.at) / growFor);
+      const g = raw * raw * (3 - 2 * raw);
+      if (g <= 0.02) return;
+      const h = (t.max * H) * (0.22 + 0.78 * g);
+      const w = t.w * W * (0.7 + 0.3 * g);
+      const cx = t.x * W;
+      const op = (0.42 + 0.5 * g).toFixed(2);
+      paths +=
+        '<path class="pine" d="' +
+        pinePath(cx, baseY, h, w) +
+        '" fill="currentColor" opacity="' +
+        op +
+        '"></path>';
+    });
+    const sun = wide
+      ? '<circle cx="' + W / 2 + '" cy="48" r="16" fill="#F0D9A0" opacity="0.55"></circle><circle cx="' + W / 2 + '" cy="48" r="28" fill="#E8C47A" opacity="0.12"></circle>'
+      : "";
+    const cls = wide ? "journey-wide" : "hero-journey";
+    return (
+      '<div class="' +
+      cls +
+      '" aria-hidden="true"><svg viewBox="0 0 ' +
+      W +
+      " " +
+      H +
+      '" preserveAspectRatio="xMidYMax meet" focusable="false">' +
+      sun +
+      paths +
+      "</svg></div>"
+    );
+  }
+
+  function isoWeekKey(d) {
+    const dt = d ? new Date(d) : new Date();
+    const tmp = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    tmp.setDate(tmp.getDate() + 3 - ((tmp.getDay() + 6) % 7));
+    const week1 = new Date(tmp.getFullYear(), 0, 4);
+    const w = 1 + Math.round(calendarDaysBetween(week1, tmp) / 7);
+    return tmp.getFullYear() + "-W" + pad(w);
+  }
+
+  function weekBounds(key) {
+    /* Approximate: use current week's Monday–Sunday in local time if key is current; else parse. */
+    const now = new Date();
+    const day = (now.getDay() + 6) % 7;
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - day);
+    mon.setHours(0, 0, 0, 0);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 7);
+    return { start: mon, end: sun };
+  }
+
+  function personalInsights() {
+    const out = [];
+    const cravings = state.cravings || [];
+    const slips = state.slips || [];
+    const checkins = state.checkins || [];
+    const quitAt = state.profile && state.profile.quitAt ? new Date(state.profile.quitAt).getTime() : Date.now();
+    if (!isFinite(quitAt)) return out;
+
+    function hoursAfter(iso) {
+      const t = new Date(iso).getTime();
+      return isFinite(t) ? (t - quitAt) / 3600000 : 0;
+    }
+
+    /* Time-of-day pattern. Need at least 5 logged cravings. */
+    if (cravings.length >= 5) {
+      const bands = [
+        { id: "morn", from: 6, to: 9, label: "om morgenen (kl. 6–9)" },
+        { id: "late-m", from: 9, to: 12, label: "formiddag (kl. 9–12)" },
+        { id: "mid", from: 12, to: 15, label: "tidlig eftermiddag (kl. 12–15)" },
+        { id: "aft", from: 15, to: 17, label: "eftermiddag (kl. 15–17)" },
+        { id: "eve", from: 17, to: 20, label: "aften (kl. 17–20)" },
+        { id: "late", from: 20, to: 24, label: "sen aften (kl. 20–24)" },
+        { id: "night", from: 0, to: 6, label: "om natten (kl. 0–6)" }
+      ];
+      const counts = {};
+      cravings.forEach(function (c) {
+        const h = new Date(c.at).getHours();
+        bands.forEach(function (b) {
+          if (h >= b.from && h < b.to) counts[b.id] = (counts[b.id] || 0) + 1;
+        });
+      });
+      let top = bands[0];
+      let n = 0;
+      bands.forEach(function (b) {
+        if ((counts[b.id] || 0) > n) {
+          n = counts[b.id];
+          top = b;
+        }
+      });
+      if (n >= 3 && n / cravings.length >= 0.3) {
+        const hoursLabel = top.label.replace(/^.*\(kl\. /, "kl. ").replace(")", "");
+        out.push({
+          id: "hours",
+          kicker: "Tidspunkt",
+          title: "Dine trang topper " + hoursLabel,
+          body:
+            n +
+            " af " +
+            cravings.length +
+            " loggede trange faldt " +
+            top.label +
+            ". Et mønster i et lille tal — værd at have en plan klar der, ikke en lov.",
+          n: cravings.length
+        });
+      }
+    }
+
+    /* Alcohol in slips. At least 2 slips, and at least one with a known alcohol field. */
+    const slipsKnown = slips.filter(function (s) { return s.alcohol === "yes" || s.alcohol === "no"; });
+    if (slips.length >= 2 && slipsKnown.length >= 2) {
+      const alc = slips.filter(function (s) { return s.alcohol === "yes"; }).length;
+      if (alc >= 1) {
+        out.push({
+          id: "alcohol",
+          kicker: "Slip",
+          title: "Alkohol stod bag " + alc + " af " + slips.length + " slip",
+          body:
+            "Et lille tal, men det er det mønster, både brugere og sundhedsmyndigheder peger på. Planen laves, mens du er ædru.",
+          n: slips.length
+        });
+      }
+    }
+
+    /* Intensity week 1 vs later. */
+    const w1 = cravings.filter(function (c) {
+      const h = hoursAfter(c.at);
+      return h >= 0 && h < 168 && c.intensity;
+    });
+    const later = cravings.filter(function (c) {
+      const h = hoursAfter(c.at);
+      return h >= 168 && c.intensity;
+    });
+    if (w1.length >= 3 && later.length >= 3) {
+      const avg = function (arr) {
+        return arr.reduce(function (a, c) { return a + Number(c.intensity || 0); }, 0) / arr.length;
+      };
+      const a1 = avg(w1);
+      const a2 = avg(later);
+      if (a1 > 0) {
+        const pct = Math.round((1 - a2 / a1) * 100);
+        if (pct >= 15) {
+          out.push({
+            id: "trend-down",
+            kicker: "Styrke",
+            title: "Trangen er faldet omkring " + pct + " % siden uge 1",
+            body:
+              "Gennemsnitlig styrke " +
+              fmtNum(a1, 1) +
+              " i uge 1, " +
+              fmtNum(a2, 1) +
+              " siden. Ud fra de " +
+              (w1.length + later.length) +
+              " trange, du har logget — dit forløb, ikke et løfte om, at det bliver ved.",
+            n: w1.length + later.length
+          });
+        } else if (pct <= -15) {
+          out.push({
+            id: "trend-up",
+            kicker: "Styrke",
+            title: "Den loggede styrke er højere end i uge 1",
+            body:
+              "Fra " +
+              fmtNum(a1, 1) +
+              " til " +
+              fmtNum(a2, 1) +
+              " i gennemsnit. Variation er almindelig, især når vaner — ikke kemien — tager over. Det er ikke et tegn på at du fejler.",
+            n: w1.length + later.length
+          });
+        }
+      }
+    }
+
+    /* Top trigger. */
+    if (cravings.length >= 4) {
+      const counts = {};
+      cravings.forEach(function (c) {
+        const k = c.trigger || "Andet";
+        counts[k] = (counts[k] || 0) + 1;
+      });
+      const ranked = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+      const top = ranked[0];
+      const n = counts[top];
+      if (n >= 2) {
+        const has = !!ifThenFor(top);
+        out.push({
+          id: "trigger",
+          kicker: "Udløser",
+          title: top + " er din hyppigste udløser",
+          body:
+            n +
+            " af " +
+            cravings.length +
+            " trange. " +
+            (has
+              ? "Du har allerede en hvis-så-plan til den situation."
+              : "En hvis-så-plan til den situation hjælper, når suget kommer."),
+          n: cravings.length,
+          act: has ? "goto-plans" : "add-plan",
+          actLabel: has ? "Se planen" : "Lav en plan",
+          trigger: top
+        });
+      }
+    }
+
+    /* Weekend vs weekday slips / cravings */
+    if (cravings.length >= 8) {
+      let we = 0, wd = 0;
+      cravings.forEach(function (c) {
+        const d = new Date(c.at).getDay();
+        if (d === 0 || d === 5 || d === 6) we++;
+        else wd++;
+      });
+      if (we >= 3 && we / cravings.length >= 0.45) {
+        out.push({
+          id: "weekend",
+          kicker: "Ugen",
+          title: "Flere trange i weekenden",
+          body:
+            we +
+            " af " +
+            cravings.length +
+            " loggede trange faldt fredag–søndag. Gennemgå planen før weekenden, mens du er ædru.",
+          n: cravings.length,
+          act: "weekend-review",
+          actLabel: "Gennemgå"
+        });
+      }
+    }
+
+    /* Check-in craving trend, if they check in often */
+    if (checkins.length >= 8) {
+      const sorted = checkins.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+      const mid = Math.floor(sorted.length / 2);
+      const first = sorted.slice(0, mid).filter(function (c) { return c.craving; });
+      const last = sorted.slice(mid).filter(function (c) { return c.craving; });
+      if (first.length >= 3 && last.length >= 3) {
+        const avg = function (arr) {
+          return arr.reduce(function (a, c) { return a + Number(c.craving || 0); }, 0) / arr.length;
+        };
+        const a1 = avg(first);
+        const a2 = avg(last);
+        if (a1 > 0 && a2 < a1 * 0.85) {
+          const pct = Math.round((1 - a2 / a1) * 100);
+          out.push({
+            id: "checkin-trend",
+            kicker: "Dagbog",
+            title: "Din egen vurdering af trangen er faldet omkring " + pct + " %",
+            body:
+              "Fra " +
+              fmtNum(a1, 1) +
+              " til " +
+              fmtNum(a2, 1) +
+              " i gennemsnit, ud fra " +
+              checkins.length +
+              " check-ins. Det er din egen måling, over et stykke tid.",
+            n: checkins.length
+          });
+        }
+      }
+    }
+
+    return out;
+  }
+
+  function insightsTeaserHtml() {
+    const list = personalInsights();
+    if (!list.length) return "";
+    const a = list[0];
+    return (
+      '<div class="card insight-card reveal">' +
+      '<div class="checkin-cta"><div class="now-card-body"><div class="card-kicker mint">Indsigt</div><strong>' +
+      esc(a.title) +
+      "</strong><p>Et mønster i dine egne log — med forbehold for, at tallene er små.</p>" +
+      '</div><button type="button" class="btn btn-ghost-mint btn-sm" data-act="goto-insights">Alle</button></div></div>'
+    );
+  }
+
+  function renderInsights(el) {
+    const list = personalInsights();
+    const items = list.length
+      ? list
+          .map(function (a) {
+            return (
+              '<div class="card insight-card"><div class="card-kicker mint">' +
+              esc(a.kicker) +
+              "</div><strong>" +
+              esc(a.title) +
+              "</strong><p>" +
+              esc(a.body) +
+              "</p>" +
+              (a.act
+                ? '<button type="button" class="btn btn-ghost-mint btn-sm mt" data-act="' +
+                  a.act +
+                  '"' +
+                  (a.trigger ? ' data-trigger="' + esc(a.trigger) + '"' : "") +
+                  ">" +
+                  esc(a.actLabel || "Åbn") +
+                  "</button>"
+                : "") +
+              '<span class="n-sample">Ud fra ' +
+              a.n +
+              " registreringer. Et mønster, ikke en diagnose.</span></div>"
+            );
+          })
+          .join("")
+      : '<div class="card empty-rich"><div class="big">🔭</div><p>Der er ikke nok logget endnu til at sige noget ærligt. Når du har et lille håndfuld trange, slip eller check-ins, vises mønstre her — med forbehold for, at tallene er små.</p></div>';
+    const s = stats();
+    el.innerHTML = subWrap(
+      "Indsigt",
+      '<p class="page-sub">Det, dine egne log viser — formuleret forsigtigt. Små tal får et forbehold. Ingen påstande, vi ikke kan bære.</p>' +
+        (s.future ? "" : journeyTrees(s.days, { wide: true })) +
+        '<div class="insight-list">' +
+        items +
+        "</div>" +
+        '<button type="button" class="btn btn-ghost-mint btn-block mt-2" data-act="goto-recap">Ugens overblik</button>'
+    );
+  }
+
+  function recapData() {
+    const b = weekBounds();
+    const start = b.start.getTime();
+    const end = b.end.getTime();
+    const inWeek = function (iso) {
+      const t = new Date(iso).getTime();
+      return t >= start && t < end;
+    };
+    const cravings = (state.cravings || []).filter(function (c) { return inWeek(c.at); });
+    const slips = (state.slips || []).filter(function (s) { return inWeek(s.at); });
+    const checkins = (state.checkins || []).filter(function (c) { return inWeek(c.date); });
+    const resisted = cravings.filter(function (c) { return c.resisted; }).length;
+    const waves = cravings.filter(function (c) { return c.usedWave; }).length;
+    const s = stats();
+    /* Money earned this week: roughly per.day * days-so-far of the week after quit, minus slip pouches this week. */
+    const now = Date.now();
+    const from = Math.max(start, isFinite(new Date(state.profile.quitAt).getTime()) ? new Date(state.profile.quitAt).getTime() : start);
+    const days = Math.max(0, (Math.min(now, end) - from) / 86400000);
+    const slipP = slips.reduce(function (a, x) { return a + (Number(x.pouches) || 0); }, 0);
+    const costPerPouch = s.r.pouchesPerDay > 0 ? s.r.costPerDay / s.r.pouchesPerDay : 0;
+    const money = Math.max(0, s.r.costPerDay * days - slipP * costPerPouch);
+    const insight = personalInsights()[0] || null;
+    return {
+      start: b.start,
+      end: b.end,
+      key: isoWeekKey(new Date()),
+      cravings: cravings.length,
+      resisted: resisted,
+      waves: waves,
+      slips: slips.length,
+      checkins: checkins.length,
+      money: money,
+      days: days,
+      insight: insight
+    };
+  }
+
+  function renderRecap(el) {
+    const r = recapData();
+    const range =
+      fmtDate(r.start, { day: "numeric", month: "short" }) +
+      " – " +
+      fmtDate(new Date(r.end.getTime() - 86400000), { day: "numeric", month: "short" });
+    const insight = r.insight
+      ? '<div class="card insight-card"><div class="card-kicker mint">Et mønster i dine log</div><strong>' +
+        esc(r.insight.title) +
+        "</strong><p>" +
+        esc(r.insight.body) +
+        "</p></div>"
+      : "";
+    const reason = reasonsList()[0];
+    el.innerHTML = subWrap(
+      "Ugens overblik",
+      '<p class="page-sub">' +
+        esc(range) +
+        " · uge " +
+        esc(String(r.key).split("-W")[1] || "") +
+        ", indtil nu.</p>" +
+        journeyTrees(stats().days, { wide: true }) +
+        '<div class="recap-hero"><div class="v">' +
+        esc(fmtKr(r.money, 0)) +
+        '</div><div class="l">sparet i den her uge</div></div>' +
+        (moneyConcreteHtml(r.money) ? '<div class="card">' + moneyConcreteHtml(r.money) + "</div>" : "") +
+        '<div class="mini-stats">' +
+        '<div class="mini-stat"><div class="v">' +
+        r.resisted +
+        '</div><div class="l">trange klaret</div></div>' +
+        '<div class="mini-stat sky"><div class="v">' +
+        r.waves +
+        '</div><div class="l">bølger redet</div></div>' +
+        '<div class="mini-stat gold"><div class="v">' +
+        r.checkins +
+        '</div><div class="l">check-ins</div></div>' +
+        '<div class="mini-stat coral"><div class="v">' +
+        r.slips +
+        '</div><div class="l">slip</div></div></div>' +
+        insight +
+        (reason
+          ? '<div class="card"><div class="card-kicker">Din grund</div><blockquote class="quote">“' +
+            esc(reason.text) +
+            "”</blockquote></div>"
+          : "") +
+        '<p class="hint mt">Et overblik over den uge, der er i gang. Små tal, ærligt formuleret.</p>'
+    );
+    state.recapSeen = state.recapSeen || {};
+    state.recapSeen[r.key] = true;
+    save();
+  }
+
+  let letterEditing = false;
+
+  function letterState() {
+    const L = state.letter || { text: "", writtenAt: null, openedAt: null };
+    const s = stats();
+    const days = s.future ? 0 : s.days;
+    const unlocked = !!L.text && days >= 30;
+    const pending = unlocked && !L.openedAt;
+    return { L: L, days: days, unlocked: unlocked, pending: pending, written: !!(L.text && L.text.trim()) };
+  }
+
+  function renderLetter(el) {
+    const ls = letterState();
+    let body = "";
+    if (!ls.written || letterEditing) {
+      body =
+        '<p class="page-sub">Skriv et kort brev til dig selv om 30 dage. Det bliver låst, indtil dagen kommer — så læser du det, du mente, da du startede.</p>' +
+        '<div class="field"><label for="letter-text">Brevet</label>' +
+        '<textarea id="letter-text" class="input" maxlength="800" style="min-height:10rem" placeholder="Hvad vil du gerne huske om 30 dage? Hvorfor du startede. Hvad der betyder noget.">' +
+        esc(ls.L.text || "") +
+        "</textarea></div>" +
+        '<button type="button" class="btn btn-primary btn-block" data-act="letter-save">Gem brevet — åbnes på dag 30</button>' +
+        '<p class="hint mt">Valgfrit. Du kan rette det, indtil det åbnes.</p>';
+    } else if (!ls.unlocked) {
+      const left = 30 - ls.days;
+      body =
+        '<div class="letter-locked"><div class="big">✉️</div><p>Brevet ligger klar. Det åbnes på dag 30.</p>' +
+        '<div class="letter-eta">' +
+        (left < 1 ? "Meget snart." : "Åbnes " + fmtEta(left * 86400)) +
+        "</div>" +
+        '<p class="hint mt">Skrevet ' +
+        esc(ls.L.writtenAt ? fmtDate(ls.L.writtenAt) : "") +
+        ".</p></div>" +
+        '<button type="button" class="btn btn-ghost btn-block" data-act="letter-edit">Ret brevet, indtil det åbnes</button>';
+    } else {
+      body =
+        '<p class="page-sub">Skrevet ' +
+        esc(ls.L.writtenAt ? fmtDate(ls.L.writtenAt) : "") +
+        ". Åbnet " +
+        (ls.L.openedAt ? esc(fmtDate(ls.L.openedAt)) : "nu") +
+        ".</p>" +
+        '<div class="card"><div class="letter-body">' +
+        esc(ls.L.text) +
+        "</div></div>" +
+        '<p class="hint mt">Det er dine egne ord fra starten. Du kan lade dem stå.</p>';
+    }
+    el.innerHTML = subWrap("Brev til mig", body);
+    if (ls.unlocked && !ls.L.openedAt) {
+      state.letter.openedAt = new Date().toISOString();
+      save();
+    }
+  }
+
+  function rankedTools() {
+    const help = state.toolHelp || {};
+    const rows = TOOLS.map(function (t) {
+      const h = help[t.id] || { yes: 0, mid: 0, no: 0 };
+      const n = (h.yes || 0) + (h.mid || 0) + (h.no || 0);
+      const score = n ? (h.yes * 2 + h.mid - h.no) / n : 0;
+      return { tool: t, n: n, score: score, yes: h.yes || 0 };
+    });
+    const used = rows.filter(function (r) { return r.n >= 2; });
+    used.sort(function (a, b) { return b.score - a.score || b.n - a.n; });
+    return used;
+  }
+
+  function toolRankHtml() {
+    const used = rankedTools();
+    if (!used.length) return "";
+    const top = used[0];
+    return (
+      '<div class="card"><div class="card-kicker mint">Hvad hjalp sidst</div>' +
+      '<p class="tool-rank">Ud fra ' +
+      top.n +
+      " gange hjalp <strong>" +
+      esc(top.tool.label) +
+      "</strong> dig oftest" +
+      (used.length > 1 ? " — derefter " + esc(used[1].tool.label) : "") +
+      ". Det er din egen log, ikke et facit.</p>" +
+      '<button type="button" class="btn btn-ghost-mint btn-sm mt" data-act="' +
+      top.tool.act +
+      '">Brug den igen</button></div>'
+    );
+  }
+
+  function toolboxHtml() {
+    const rank = rankedTools();
+    const order = TOOLS.slice();
+    if (rank.length) {
+      const ids = rank.map(function (r) { return r.tool.id; });
+      order.sort(function (a, b) {
+        const ia = ids.indexOf(a.id);
+        const ib = ids.indexOf(b.id);
+        return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+      });
+    }
+    const btns = order
+      .map(function (t) {
+        return (
+          '<button type="button" class="tool-act' +
+          (t.id === "delay" ? " wide" : "") +
+          '" data-act="' +
+          t.act +
+          '"><span class="tool-lab">' +
+          esc(t.label) +
+          '</span><span class="tool-sub">' +
+          esc(t.sub) +
+          "</span></button>"
+        );
+      })
+      .join("");
+    return (
+      '<div class="section-label">Værktøjskasse</div>' +
+      '<div class="toolbox">' +
+      btns +
+      "</div>" +
+      toolRankHtml()
+    );
+  }
+
+  function closeToolScreen() {
+    const screen = $("#tool-screen");
+    if (screen) {
+      screen.classList.add("hidden");
+      screen.innerHTML = "";
+    }
+    if (toolTimer) {
+      clearTimeout(toolTimer);
+      toolTimer = null;
+    }
+    if (toolRaf) {
+      cancelAnimationFrame(toolRaf);
+      toolRaf = 0;
+    }
+    const tab = $("#tabbar");
+    const fab = $("#fab-sos");
+    if (tab && state.onboarded) tab.classList.remove("hidden");
+    if (fab && state.onboarded && view !== "craving" && view !== "more") fab.classList.remove("hidden");
+  }
+
+  function openToolScreen(html) {
+    closeModal();
+    const screen = $("#tool-screen");
+    if (!screen) return;
+    screen.classList.remove("hidden");
+    $("#tabbar").classList.add("hidden");
+    $("#fab-sos").classList.add("hidden");
+    screen.innerHTML = html;
+  }
+
+  function askHelped(toolId) {
+    openSheet(
+      "<h2>Hjalp det?</h2>" +
+        '<p class="sheet-lead">Din egen log. Den bruges til at vise, hvad der hjalp dig sidst.</p>' +
+        '<div class="row2">' +
+        '<button type="button" class="btn btn-primary btn-block" data-act="tool-helped" data-id="' +
+        esc(toolId) +
+        '" data-val="yes">Ja</button>' +
+        '<button type="button" class="btn btn-ghost-mint btn-block" data-act="tool-helped" data-id="' +
+        esc(toolId) +
+        '" data-val="mid">Lidt</button></div>' +
+        '<button type="button" class="btn btn-ghost btn-block mt" data-act="tool-helped" data-id="' +
+        esc(toolId) +
+        '" data-val="no">Ikke denne gang</button>'
+    );
+  }
+
+  function recordToolHelp(id, val) {
+    state.toolHelp = state.toolHelp || {};
+    const h = state.toolHelp[id] || { yes: 0, mid: 0, no: 0 };
+    if (val === "yes") h.yes++;
+    else if (val === "mid") h.mid++;
+    else h.no++;
+    state.toolHelp[id] = h;
+    save();
+  }
+
+  function startGround() {
+    haptic("start");
+    let step = 0;
+    function paint() {
+      const g = GROUND_STEPS[step];
+      const last = step === GROUND_STEPS.length - 1;
+      openToolScreen(
+        '<p class="tool-kicker">Jordforbindelse</p>' +
+          '<div class="tool-step-n">' +
+          (step + 1) +
+          " af " +
+          GROUND_STEPS.length +
+          "</div>" +
+          '<h2 class="tool-title">' +
+          esc(g.title) +
+          '</h2><p class="tool-sub">' +
+          esc(g.body) +
+          '</p><div class="tool-actions">' +
+          '<button type="button" class="btn btn-primary btn-block" data-act="ground-next">' +
+          (last ? "Færdig" : "Næste") +
+          "</button>" +
+          '<button type="button" class="btn btn-ghost btn-block mt" data-act="tool-close">Luk</button></div>'
+      );
+      const screen = $("#tool-screen");
+      if (screen) {
+        screen._groundStep = step;
+        screen._groundLast = last;
+      }
+    }
+    paint();
+    window._groundPaint = function (next) {
+      if (next) {
+        if (step >= GROUND_STEPS.length - 1) {
+          closeToolScreen();
+          askHelped("ground");
+          return;
+        }
+        step++;
+        paint();
+      }
+    };
+  }
+
+  function startCountdownTool(opts) {
+    haptic("start");
+    const total = opts.ms || 30000;
+    const start = Date.now();
+    function frame() {
+      const elapsed = Date.now() - start;
+      const rem = Math.max(0, total - elapsed);
+      const sec = Math.ceil(rem / 1000);
+      const timeEl = $("#tool-count");
+      if (timeEl) timeEl.textContent = String(sec);
+      if (rem <= 0) {
+        closeToolScreen();
+        askHelped(opts.id);
+        return;
+      }
+      toolRaf = requestAnimationFrame(frame);
+    }
+    openToolScreen(
+      '<p class="tool-kicker">' +
+        esc(opts.kicker) +
+        "</p>" +
+        '<h2 class="tool-title">' +
+        esc(opts.title) +
+        '</h2><p class="tool-sub">' +
+        esc(opts.body) +
+        '</p><div class="tool-count" id="tool-count">' +
+        Math.ceil(total / 1000) +
+        '</div><div class="tool-actions">' +
+        '<button type="button" class="btn btn-ghost btn-block" data-act="tool-close">Stop</button></div>'
+    );
+    toolRaf = requestAnimationFrame(frame);
+  }
+
+  function startDelay(opts) {
+    opts = opts || {};
+    haptic("start");
+    let start, end, total;
+    const existing = state.activeDelay;
+    const resume = !!(opts.resume && existing && existing.end);
+    if (resume) {
+      start = new Date(existing.start).getTime();
+      end = new Date(existing.end).getTime();
+      total = Math.max(0, end - Date.now());
+      if (!isFinite(end) || existing.done || total <= 0) {
+        finishDelay();
+        return;
+      }
+    } else {
+      total = opts.ms != null ? opts.ms : DELAY_MS;
+      start = Date.now();
+      end = start + total;
+      state.activeDelay = {
+        start: new Date(start).toISOString(),
+        end: new Date(end).toISOString(),
+        done: false
+      };
+      save();
+    }
+    const labelMin = Math.max(1, Math.round((end - start) / 60000));
+    function paint(rem) {
+      const m = Math.floor(rem / 60000);
+      const sec = Math.floor((rem % 60000) / 1000);
+      const timeEl = $("#tool-count");
+      if (timeEl) timeEl.textContent = m + ":" + pad(sec);
+    }
+    function frame() {
+      const rem = Math.max(0, end - Date.now());
+      paint(rem);
+      if (rem <= 0) {
+        finishDelay();
+        return;
+      }
+      toolRaf = requestAnimationFrame(frame);
+    }
+    function finishDelay() {
+      if (toolRaf) cancelAnimationFrame(toolRaf);
+      toolRaf = 0;
+      state.activeDelay = state.activeDelay || {};
+      state.activeDelay.done = true;
+      save();
+      openToolScreen(
+        '<p class="tool-kicker">Ti minutter</p>' +
+          '<h2 class="tool-title">Tiden er gået</h2>' +
+          '<p class="tool-sub">Hvordan er trangen nu? Du behøver stadig ikke beslutte resten af livet — bare det næste skridt.</p>' +
+          '<div class="tool-actions">' +
+          '<button type="button" class="btn btn-primary btn-block" data-act="tool-delay-done">Den gik — log og luk</button>' +
+          '<button type="button" class="btn btn-coral btn-block mt" data-act="sos">Stadig her · åbn SOS</button>' +
+          '<button type="button" class="btn btn-ghost btn-block mt" data-act="tool-close">Luk</button></div>'
+      );
+    }
+    openToolScreen(
+      '<p class="tool-kicker">Vent</p>' +
+        '<h2 class="tool-title">Beslutningen kan vente</h2>' +
+        '<p class="tool-sub">' +
+        (labelMin === 10
+          ? "Ti minutter. Trangen er en gæst. Lav noget andet — et glas vand, en kort tur. Timere kører, mens appen er åben."
+          : "Trangen er en gæst. Lav noget andet. Timere kører, mens appen er åben.") +
+        '</p>' +
+        '<div class="tool-count" id="tool-count">10:00</div>' +
+        '<div class="tool-actions">' +
+        '<button type="button" class="btn btn-ghost btn-block" data-act="tool-close">Luk — tiden kører videre</button></div>'
+    );
+    paint(total);
+    toolRaf = requestAnimationFrame(frame);
+    window._finishDelay = finishDelay;
+  }
+
+  function CELEBRATIONS() {
+    return [
+      { id: "d1", days: 1, title: "Første døgn", body: "Et helt døgn uden ny nikotin. Kroppen er i gang. De næste dage kan være de hårdeste — det er midlertidigt, og det er normalt." },
+      { id: "d3", days: 3, title: "Tre dage", body: "Nikotinen er næsten ude. For de fleste er toppen her eller lige passeret. Du behøver ikke vinde resten af livet — bare den næste bølge." },
+      { id: "d7", days: 7, title: "En uge", body: "De fysiske abstinenser aftager som regel. Vanerne bliver. Dine planer er lavet til dem." },
+      { id: "d14", days: 14, title: "To uger", body: "Nogle kalder det nedad bakke herfra. Det er en erfaring, ikke et løfte. Du er et stykke henne." },
+      { id: "d28", days: 28, title: "28 dage", body: "28 dage uden røg femdobler ifølge Helsenorge chancen for at holde op for godt — den samme dokumentation findes ikke for snus. Tag det som et delmål." },
+      { id: "d30", days: 30, title: "30 dage", body: "En måned. Hvis du skrev et brev til dig selv ved starten, ligger det klar nu." },
+      { id: "d100", days: 100, title: "100 dage", body: "Et hundrede dage. Historikken står. Fortsæt som du har gjort." },
+      { id: "d182", days: 182, title: "Et halvt år", body: "Den værste del er for de fleste overstået, men fest og gamle cues kan stadig vække vanen. Opmerksomhed, ikke skrøbelighed." },
+      { id: "d365", days: 365, title: "Et år", body: "Et helt år uden snus. Historikken står. Det er et langt stykke arbejde — fortsæt som du har gjort." }
+    ];
+  }
+
+  function pendingCelebration() {
+    const s = stats();
+    if (s.future) return null;
+    const days = s.days;
+    state.celebrated = state.celebrated || {};
+    const list = CELEBRATIONS();
+    for (let i = list.length - 1; i >= 0; i--) {
+      const c = list[i];
+      if (days >= c.days && !state.celebrated[c.id]) {
+        /* Only surface if we crossed it recently (36 hours), so a v10-migration at day 120 is not a firework show. */
+        const crossed = new Date((state.profile && state.profile.quitAt) ? state.profile.quitAt : Date.now());
+        const at = crossed.getTime() + c.days * 86400000;
+        if (Date.now() - at < 36 * 3600000 && Date.now() >= at) return c;
+      }
+    }
+    return null;
+  }
+
+  function showCelebration(c) {
+    if (!c) return;
+    state.celebrated = state.celebrated || {};
+    state.celebrated[c.id] = new Date().toISOString();
+    save();
+    haptic("done");
+    const letterCta =
+      c.id === "d30" && letterState().written && letterState().unlocked
+        ? '<button type="button" class="btn btn-gold btn-block mt" data-act="goto-letter">Åbn brevet</button>'
+        : "";
+    openSheet(
+      '<div class="celebrate-mark" aria-hidden="true"><svg viewBox="0 0 48 48" fill="currentColor"><path d="' +
+        pinePath(24, 44, 36, 16) +
+        '"></path></svg></div>' +
+        "<h2>" +
+        esc(c.title) +
+        "</h2>" +
+        '<p class="sheet-lead">' +
+        esc(c.body) +
+        "</p>" +
+        journeyTrees(stats().days, { wide: true }) +
+        letterCta +
+        '<button type="button" class="btn btn-primary btn-block mt" data-act="close-modal">Videre</button>'
+    );
+  }
+
+
   function renderHome() {
     const el = $("#view-home");
     const s = stats();
@@ -2227,6 +3265,7 @@
       '">' +
       '<img class="hero-img" src="icons/hero.jpg" srcset="icons/hero@2x.jpg 780w, icons/hero.jpg 1170w" sizes="(min-width: 560px) 430px, 100vw" alt="">' +
       '<div class="hero-glow"></div><div class="hero-vignette"></div>' +
+      (s.future ? "" : journeyTrees(s.days, {})) +
       '<div class="hero-content">' +
       '<p class="hero-kicker" id="hero-kicker">' +
       (s.future ? "Starter om" : "Snusfri i") +
@@ -2257,6 +3296,7 @@
       (showCompassFirst ? "" : compass) +
       quote +
       checkinDone +
+      insightsTeaserHtml() +
       teaser +
       inst +
       "</div>";
@@ -2370,6 +3410,7 @@
       '<h1 class="page-title">Sundhed</h1>' +
       '<p class="page-sub">Hvor du er i forløbet — ærligt, med spænd, ikke løfter. Milepælene under er vejledende, ikke medicinsk rådgivning.</p>' +
       compassCardHtml({ full: true }) +
+      (s.future ? "" : journeyTrees(s.days, { wide: true })) +
       day28Html(s, { health: true, force: true }) +
       '<div class="section-label">Abstinens-forløbet</div>' +
       '<div class="card"><div class="timeline compass-timeline">' +
@@ -2523,6 +3564,7 @@
       '<button class="btn btn-coral btn-block btn-wrap" data-act="start-wave">Rid bølgen · 3–4 min.</button>' +
       '<button class="btn btn-gold btn-block btn-wrap" data-act="bare-en">Bare én pose?</button>' +
       "</div></div>" +
+      toolboxHtml() +
       '<div class="mini-stats">' +
       '<div class="mini-stat"><div class="v">' +
       resisted +
@@ -2547,15 +3589,6 @@
       '<div class="section-label">Efter udløser</div>' +
       '<div class="card">' +
       triggerBars(list) +
-      "</div>" +
-      '<div class="section-label">Distraktioner, der virker</div>' +
-      '<div class="card">' +
-      TIPS.slice(0, 6)
-        .map(
-          (t, i) =>
-            '<div class="tip"><div class="n">' + (i + 1) + "</div><div>" + esc(t) + "</div></div>"
-        )
-        .join("") +
       "</div>" +
       '<div class="section-label">Seneste</div>' +
       '<div class="card">' +
@@ -2662,6 +3695,9 @@
     if (morePage === "inbox") return renderInbox(el);
     if (morePage === "nf") return renderNicotineFree(el);
     if (morePage === "data") return renderData(el);
+    if (morePage === "insights") return renderInsights(el);
+    if (morePage === "recap") return renderRecap(el);
+    if (morePage === "letter") return renderLetter(el);
 
     const ciN = (state.checkins || []).length;
     const slipN = (state.slips || []).length;
@@ -2679,6 +3715,9 @@
       row("reasons", "✍️", "lav", "Mine grunde", reasonsList().length ? reasonsList().length + " grunde" : "Ét swipe væk", "") +
       row("buddy", "🤝", "sky", "Makker", (state.buddy && state.buddy.name) ? state.buddy.name : "Én livline, ingen feed", "") +
       row("share", "📤", "gold", "Del dit overblik", "Dage og sparede kroner — som et glansbillede", "share-status") +
+      row("insights", "🔭", "sky", "Indsigt", "Mønstre i dine egne log — med forbehold", "") +
+      row("recap", "📅", "mint", "Ugens overblik", "Ugen indtil nu", "") +
+      row("letter", "✉️", "gold", "Brev til mig", letterState().written ? (letterState().unlocked ? "Klar til at læse" : "Åbnes på dag 30") : "Skriv til dig selv om 30 dage", "") +
       "</div>" +
       '<div class="section-label">Hjælp</div>' +
       '<div class="rows">' +
@@ -3020,7 +4059,19 @@
         esc(p.motivation || "") +
         "</textarea>" +
         '<p class="hint">Dine fulde grunde redigerer du under <button class="linkish" data-act="goto-reasons">Mine grunde</button>.</p></div>' +
-        '<button class="btn btn-primary btn-block" data-act="settings-save">Gem ændringer</button>'
+        '<div class="field mt-2"><label>Udseende</label></div>' +
+        '<div class="theme-seg" role="group" aria-label="Udseende">' +
+        '<button type="button" data-act="set-theme" data-theme="system" class="' +
+        ((state.theme || "system") === "system" ? "on" : "") +
+        '">System</button>' +
+        '<button type="button" data-act="set-theme" data-theme="dark" class="' +
+        (state.theme === "dark" ? "on" : "") +
+        '">Mørk</button>' +
+        '<button type="button" data-act="set-theme" data-theme="light" class="' +
+        (state.theme === "light" ? "on" : "") +
+        '">Lys</button></div>' +
+        '<p class="hint">Følger telefonen, medmindre du vælger selv. Fest-mode, trang-surfer og onboarding bliver mørke — de er lavet til ro og kontrast.</p>' +
+        '<button class="btn btn-primary btn-block mt-2" data-act="settings-save">Gem ændringer</button>'
     );
   }
 
@@ -3033,7 +4084,7 @@
         '<div class="hr"></div>' +
         '<p class="fineprint">Snusfri er ikke medicinsk rådgivning og erstatter ikke samtale med en læge eller anden sundhedsfaglig. Milepælene er vejledende og formuleret forsigtigt — alle reagerer forskelligt.</p>' +
         '<p class="fineprint mt">Som web-app kan Snusfri ikke lægge en rigtig widget på iOS-hjemmeskærmen — det kræver en native skal. Forsiden er lavet som et kompakt overblik, og beskederne i appen viser dage og sparede kroner, når du åbner den.</p>' +
-        '<p class="fineprint mt">Version 1.1 · november 2026 · Lavet til at ligge på din hjemmeskærm.</p></div>'
+        '<p class="fineprint mt">Version 1.3 · november 2026 · Service worker v10. Lavet til at ligge på din hjemmeskærm.</p></div>'
     );
   }
 
@@ -3365,6 +4416,7 @@
   /* ---------------- sheets: SOS, breath, slip, checkin, goals ---------------- */
   function openSOS(prefill) {
     prefill = prefill || {};
+    closeToolScreen();
     const chips = TRIGGERS.map((t) => {
       const on = prefill.trigger === t;
       return (
@@ -3459,15 +4511,9 @@
 
   function openTips() {
     openSheet(
-      "<h2>Distraktioner</h2>" +
+      "<h2>Værktøjskasse</h2>" +
         '<p class="sheet-lead">Vælg én. Gør den færdig, før du beslutter noget andet.</p>' +
-        '<div class="card">' +
-        TIPS.map(
-          (t, i) =>
-            '<div class="tip"><div class="n">' + (i + 1) + "</div><div>" + esc(t) + "</div></div>"
-        ).join("") +
-        "</div>" +
-        '<button class="btn btn-primary btn-block mt-2" data-act="start-breath">Hellere 2 min. vejrtrækning</button>' +
+        toolboxHtml() +
         '<button class="btn btn-ghost btn-block mt" data-act="close-modal">Luk</button>'
     );
   }
@@ -4792,6 +5838,68 @@
       save();
       toast("Vægt gemt. Kun for dig — det her er ikke et slankeprogram.");
     },
+    "goto-insights": () => { view = "more"; morePage = "insights"; closeModal(); closeToolScreen(); render(); },
+    "goto-recap": () => { view = "more"; morePage = "recap"; closeModal(); render(); },
+    "goto-letter": () => { view = "more"; morePage = "letter"; closeModal(); render(); },
+    "set-theme": (el) => {
+      state.theme = el.dataset.theme || "system";
+      save();
+      applyTheme();
+      render();
+    },
+    "letter-save": () => {
+      const t = (($("#letter-text") || {}).value || "").trim();
+      if (!t) { toast("Skriv et par linjer — eller lad det vente.", "warn"); return; }
+      const prev = state.letter || {};
+      state.letter = {
+        text: t,
+        writtenAt: prev.writtenAt || new Date().toISOString(),
+        openedAt: null
+      };
+      letterEditing = false;
+      save();
+      render();
+      toast("Brevet er gemt. Det åbnes på dag 30.");
+    },
+    "letter-edit": () => {
+      const ls = letterState();
+      if (ls.unlocked) return;
+      letterEditing = true;
+      render();
+    },
+    "tool-ground": () => startGround(),
+    "tool-cold": () => startCountdownTool({
+      id: "cold",
+      kicker: "30 sekunder",
+      title: "Koldt vand",
+      body: "Hold et koldt glas, eller skyl hænder og ansigt. Mærk kulden. Tredive sekunder.",
+      ms: (typeof DELAY_MS !== "undefined" && DELAY_MS < 60000) ? 4000 : 30000
+    }),
+    "tool-move": () => startCountdownTool({
+      id: "move",
+      kicker: "30 sekunder",
+      title: "Rejs dig",
+      body: "Ti dybe squats, eller ryst arme og ben. Eller en væg-sid. Kroppen først, beslutningen bagefter.",
+      ms: (typeof DELAY_MS !== "undefined" && DELAY_MS < 60000) ? 4000 : 30000
+    }),
+    "tool-delay": () => {
+      if (state.activeDelay && state.activeDelay.end && !state.activeDelay.done) startDelay({ resume: true });
+      else startDelay();
+    },
+    "tool-close": () => closeToolScreen(),
+    "tool-delay-done": () => {
+      closeToolScreen();
+      state.activeDelay = null;
+      save();
+      askHelped("delay");
+    },
+    "ground-next": () => { if (window._groundPaint) window._groundPaint(true); },
+    "tool-helped": (el) => {
+      recordToolHelp(el.dataset.id, el.dataset.val);
+      closeModal();
+      toast(el.dataset.val === "yes" ? "Gemt. Vi husker, hvad der hjalp." : "Gemt.");
+      if (view === "craving") render();
+    },
     "goto-compass": () => { view = "health"; morePage = null; closePartyScreen(); render(); },
     "goto-plans": () => { view = "more"; morePage = "plans"; closeModal(); closePartyScreen(); render(); },
     "goto-party": () => { view = "more"; morePage = "party"; closeModal(); render(); },
@@ -5142,7 +6250,11 @@
     const cravingDays = [1, 1, 2, 2, 3, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16, 19, 22, 26, 31, 38, 47, 58, 72, 88, 108, 112, 115, 117, 119, 120];
     const intensities = [7, 8, 9, 7, 8, 6, 7, 8, 6, 7, 5, 6, 7, 5, 6, 4, 5, 6, 4, 5, 3, 4, 3, 4, 3, 4, 3, 2, 3, 2];
     const cravings = cravingDays.map((day, i) => {
-      const at = new Date(quitAt.getTime() + day * 86400000 + (9 + (i % 8)) * 3600000 + (i * 7) * 60000);
+      const hour = i % 5 === 0 ? 10 + (i % 3) : 15 + (i % 3);
+      const atDate = new Date(quitAt.getTime() + day * 86400000);
+      atDate.setHours(hour, (i * 7) % 60, 0, 0);
+      if (atDate.getTime() < quitAt.getTime()) atDate.setTime(quitAt.getTime() + 3600000);
+      const at = atDate;
       return {
         id: "c" + i,
         at: at.toISOString(),
@@ -5310,6 +6422,38 @@
       // 7-day journal streak: last 11 check-ins are consecutive ending today (skipped only day -11)
       set("j7", now - 4 * 864e5);
     })();
+    state.theme = opts.theme || "system";
+    state.toolHelp = {
+      wave: { yes: 6, mid: 1, no: 0 },
+      ground: { yes: 3, mid: 1, no: 1 },
+      delay: { yes: 2, mid: 1, no: 0 },
+      cold: { yes: 1, mid: 2, no: 0 },
+      move: { yes: 2, mid: 0, no: 1 }
+    };
+    if (dayCount >= 8) {
+      const slipAt = function (day, hour) {
+        return new Date(quitAt.getTime() + day * 86400000 + hour * 3600000).toISOString();
+      };
+      state.slips = [
+        { id: "s1", at: slipAt(8, 22), pouches: 2, alcohol: "yes", note: "En fest. Jeg tog to poser.", place: "Fest", feeling: "", reset: false, previousQuitAt: quitAt.toISOString() },
+        { id: "s2", at: slipAt(18, 21), pouches: 1, alcohol: "yes", note: "", place: "Bar", feeling: "", reset: false, previousQuitAt: quitAt.toISOString() },
+        { id: "s3", at: slipAt(25, 16), pouches: 2, alcohol: "no", note: "En stresset eftermiddag.", place: "Arbejde", feeling: "", reset: false, previousQuitAt: quitAt.toISOString() }
+      ].filter(function (x) { return new Date(x.at).getTime() <= now; });
+    }
+    if (opts.withLetter || dayCount >= 14) {
+      state.letter = {
+        text: "Hej. Hvis du læser det her, er der gået en måned. Husk hvorfor du startede: du ville være til stede, og du var træt af at tage en pose bare for at føle dig normal. Det er svært, og det er det værd. Du behøver ikke være færdig — bare fortsætte.",
+        writtenAt: quitAt.toISOString(),
+        openedAt: opts.letterOpened ? new Date(now).toISOString() : null
+      };
+    }
+    /* Avoid a celebration sheet on ordinary demos. Leave a milestone un-marked only when asked. */
+    state.celebrated = state.celebrated || {};
+    CELEBRATIONS().forEach(function (c) {
+      if (opts.celebrate && Math.abs(dayCount - c.days) < 1.6) return;
+      if (dayCount >= c.days) state.celebrated[c.id] = new Date(quitAt.getTime() + c.days * 86400000).toISOString();
+    });
+    if (opts.theme) applyTheme();
     save();
     view = "home";
     morePage = null;
@@ -5349,7 +6493,10 @@
   function init() {
     load();
     const params = new URLSearchParams(location.search);
-    if (params.get("fast") === "1") WAVE_MS = 4000;
+    if (params.get("fast") === "1") {
+      WAVE_MS = 4000;
+      DELAY_MS = 5000;
+    }
     const demo = params.get("demo");
     if (demo === "1") {
       seedDemo({ hideInstall: params.get("install") !== "1" });
@@ -5357,9 +6504,21 @@
       seedDemo({ hideInstall: params.get("install") !== "1", days: 2.4 });
     } else if (demo === "fresh") {
       seedDemo({ hideInstall: params.get("install") !== "1", days: 0.3 });
+    } else if (demo === "letter") {
+      seedDemo({ hideInstall: params.get("install") !== "1", days: 31, withLetter: true });
+    } else if (demo === "light") {
+      seedDemo({ hideInstall: params.get("install") !== "1", days: 16, theme: "light" });
     }
     document.addEventListener("click", onTap);
     // Prevent accidental double-tap zoom delay already handled by viewport
+    applyTheme();
+    try {
+      if (window.matchMedia) {
+        matchMedia("(prefers-color-scheme: light)").addEventListener("change", function () {
+          if ((state.theme || "system") === "system") { applyTheme(); }
+        });
+      }
+    } catch (e) {}
     render();
     hideBoot();
     setTimeout(hideBoot, 1800);
@@ -5370,6 +6529,8 @@
       ensureInbox();
       checkAchievements(true);
       if ((state.inbox || []).length !== before && view === "home") renderHome();
+      const cel = pendingCelebration();
+      if (cel) showCelebration(cel);
     });
     if (state.onboarded && state.activeParty && !state.activeParty.endedAt) {
       const plan = (state.partyPlans || []).find(function (p) { return p.id === state.activeParty.planId; });
@@ -5424,6 +6585,16 @@
     shareStatus: shareStatus,
     haptic: haptic,
     openWeekendReview: openWeekendReview,
+    personalInsights: personalInsights,
+    moneyConcrete: moneyConcrete,
+    applyTheme: applyTheme,
+    letterState: letterState,
+    startDelay: startDelay,
+    startGround: startGround,
+    recapData: recapData,
+    rankedTools: rankedTools,
+    showCelebration: showCelebration,
+    DELAY_MS: function (ms) { if (ms != null) DELAY_MS = ms; return DELAY_MS; },
     WAVE_MS: function (ms) { if (ms) WAVE_MS = ms; return WAVE_MS; },
     reset: () => {
       state = defaultState();

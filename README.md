@@ -56,6 +56,8 @@ Forsiden svarer først på «hvordan har jeg det nu, og hvad hjælper nu»: komp
 
 Som web-app kan Snusfri ikke lægge en rigtig widget på iOS-hjemmeskærmen — det kræver en native skal. Du kan dele dage og sparede kroner som tekst. 28 dage vises som delmål med det forbehold, at evidensen er for røg, ikke snus. Valgfri, diskret vægtlog — ikke et slankeprogram.
 
+Forsiden viser en skov, der vokser med dine snusfri dage. Under **Mere** ligger **Indsigt** (mønstre i dine egne log, med forbehold for små tal), **Ugens overblik**, og et valgfrit **brev til dig selv**, skrevet ved start og låst til dag 30. Penge vises også som konkrete ting (en kop kaffe, en biografbillet). Trang-fanen har en værktøjskasse: 5-4-3-2-1, koldt vand, mini-træning, «vent 10 minutter», og en rangering af det, du selv markerede som hjælpsomt. Udseende kan følge systemet eller sættes til lyst eller mørkt — fest-mode, trang-surfer og onboarding bliver ved med at være mørke.
+
 Milepælene og kompasset er vejledende, ikke medicinsk rådgivning. Ved alvorlig nedtrykthed, tal med en læge.
 
-Version 1.2 · november 2026 · service worker v9.
+Version 1.3 · november 2026 · service worker v10.
